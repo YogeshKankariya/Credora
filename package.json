@@ -1,0 +1,17 @@
+{
+  "name": "hack2ignite",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Decentralized Banking Identity and KYC Verification Platform",
+  "workspaces": [
+    "backend",
+    "blockchain",
+    "frontend/*",
+    "shared"
+  ],
+  "scripts": {
+    "test": "npm run test --workspaces",
+    "lint": "npm run lint --workspaces",
+    "format": "npm run format --workspaces"
+  }
+}
