@@ -6,7 +6,7 @@
   "workspaces": [
     "backend",
     "blockchain",
-    "frontend/*",
+    "frontend",
     "shared"
   ],
   "scripts": {

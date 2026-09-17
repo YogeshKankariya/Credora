@@ -3,6 +3,25 @@ import prisma from "../config/database.js";
 import { sendSuccess, sendError, sendServerError } from "../utils/response.js";
 import { param } from "../utils/params.js";
 
+// GET /api/customers
+export async function getAllCustomers(_req: Request, res: Response): Promise<void> {
+  try {
+    const customers = await prisma.customerProfile.findMany({
+      include: {
+        user: { select: { name: true, email: true } },
+        credentials: {
+          orderBy: { issuedAt: "desc" },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    sendSuccess(res, customers);
+  } catch (err) {
+    console.error("[customer.getAllCustomers]", err);
+    sendServerError(res);
+  }
+}
+
 // GET /api/customers/me
 export async function getMyProfile(req: Request, res: Response): Promise<void> {
   try {

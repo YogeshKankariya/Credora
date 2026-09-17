@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  getAllCustomers,
   getMyProfile,
   getCustomerById,
   getCustomerIdentity,
@@ -12,6 +13,9 @@ const router = Router();
 
 // All customer routes require authentication
 router.use(authenticate);
+
+// GET /api/customers
+router.get("/", getAllCustomers);
 
 // GET /api/customers/me
 router.get("/me", getMyProfile);
