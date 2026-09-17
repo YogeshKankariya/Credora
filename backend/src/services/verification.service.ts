@@ -82,7 +82,11 @@ async function verify(input: VerificationInput): Promise<VerificationResult> {
     where: { id: credential.issuerId },
   });
 
-  if (trustedIssuer && trustedIssuer.status === "ACTIVE") {
+  if (
+    trustedIssuer &&
+    trustedIssuer.status === "ACTIVE" &&
+    (trustedIssuer.role === "ISSUER" || trustedIssuer.role === "BOTH")
+  ) {
     checks.issuer = true;
   }
 
@@ -117,9 +121,10 @@ async function verify(input: VerificationInput): Promise<VerificationResult> {
 
   // ── Check 6: Status Active ────────────────────────────────────────────────
   const now = new Date();
-  const isNotRevoked = credential.status !== "REVOKED";
-  const isNotExpired = credential.expiresAt > now;
-  checks.statusActive = isNotRevoked && isNotExpired;
+  const isStatusActive = credential.status === "ACTIVE";
+  const hasNoRevocation = !credential.revocation;
+  const isNotExpired = credential.expiresAt.getTime() > now.getTime();
+  checks.statusActive = isStatusActive && hasNoRevocation && isNotExpired;
 
   return await saveAndReturn(checks, credentialId, purpose, verifierId, credential.id);
 }
