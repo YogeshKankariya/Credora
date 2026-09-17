@@ -27,7 +27,7 @@ export const LandingPage = () => {
         </div>
 
         <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight">
-          Decentralized <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Banking Identity</span>
+          CR<span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">EDORA</span>
         </h1>
 
         <h2 className="text-2xl sm:text-3xl font-bold text-slate-300">
@@ -45,12 +45,6 @@ export const LandingPage = () => {
           >
             <span>Get Started</span>
             <ArrowRight className="w-4 h-4" />
-          </Link>
-          <Link
-            to="/login"
-            className="flex items-center gap-2 px-6 py-3.5 rounded-xl font-semibold text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-700 transition-all"
-          >
-            <span>Explore Demo</span>
           </Link>
         </div>
       </section>

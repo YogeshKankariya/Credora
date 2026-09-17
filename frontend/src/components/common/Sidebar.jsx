@@ -151,68 +151,69 @@ export const Sidebar = ({
         `}
       >
         {/* Brand Header */}
-        <div
-          className={`
-            h-16 px-5 border-b border-slate-800
-            flex items-center
-            ${isCollapsed ? 'md:justify-center' : 'justify-between'}
-          `}
-        >
-          <Link
-            to=""
-            className="flex items-center gap-2.5 min-w-0"
-          >
-            {/* Logo */}
-            <div className="w-9 h-9 shrink-0 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-md shadow-cyan-500/20">
-              <ShieldCheck className="w-5 h-5 text-white" />
-            </div>
+<div
+  className={`
+    h-16 px-5 border-b border-slate-800
+    flex items-center
+    ${isCollapsed ? 'md:justify-center' : 'justify-between'}
+  `}
+>
+  {/* Expanded: Logo + Brand */}
+  {!isCollapsed && (
+    <Link
+      to=""
+      className="flex items-center gap-2.5 min-w-0"
+    >
+      {/* Logo */}
+      <div className="w-9 h-9 shrink-0 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-md shadow-cyan-500/20">
+        <ShieldCheck className="w-5 h-5 text-white" />
+      </div>
 
-            {/* Brand Text */}
-            {!isCollapsed && (
-              <div className="hidden md:block">
-                <span className="font-bold text-sm text-white tracking-tight block whitespace-nowrap">
-                  Decentralized KYC
-                </span>
+      {/* Brand Text */}
+      <div className="hidden md:block">
+        <span className="font-bold text-sm text-white tracking-tight block whitespace-nowrap">
+          CREDORA
+        </span>
+      </div>
+    </Link>
+  )}
 
-                <span className="text-[10px] text-cyan-400 font-medium uppercase tracking-wider block whitespace-nowrap">
-                  Banking Identity
-                </span>
-              </div>
-            )}
+  {/* Desktop Collapse / Expand Button */}
+  <button
+    onClick={onToggleCollapse}
+    className="hidden md:flex p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+    title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+  >
+    {isCollapsed ? (
+      <PanelLeftOpen className="w-5 h-5" />
+    ) : (
+      <PanelLeftClose className="w-5 h-5" />
+    )}
+  </button>
 
-            {/* Mobile Brand Text */}
-            <div className="md:hidden">
-              <span className="font-bold text-sm text-white tracking-tight block whitespace-nowrap">
-                Decentralized KYC
-              </span>
+  {/* Mobile: Logo + Brand + Close */}
+  <div className="flex items-center justify-between w-full md:hidden">
+    <Link
+      to=""
+      className="flex items-center gap-2.5"
+    >
+      <div className="w-9 h-9 shrink-0 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-md shadow-cyan-500/20">
+        <ShieldCheck className="w-5 h-5 text-white" />
+      </div>
 
-              <span className="text-[10px] text-cyan-400 font-medium uppercase tracking-wider block whitespace-nowrap">
-                Banking Identity
-              </span>
-            </div>
-          </Link>
+      <span className="font-bold text-sm text-white tracking-tight">
+        CREDORA
+      </span>
+    </Link>
 
-          {/* Desktop Collapse Button */}
-          <button
-            onClick={onToggleCollapse}
-            className="hidden md:flex p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-            title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            {isCollapsed ? (
-              <PanelLeftOpen className="w-5 h-5" />
-            ) : (
-              <PanelLeftClose className="w-5 h-5" />
-            )}
-          </button>
-
-          {/* Mobile Close Button */}
-          <button
-            onClick={onClose}
-            className="p-1 rounded-lg text-slate-400 hover:text-white md:hidden"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+    <button
+      onClick={onClose}
+      className="p-1 rounded-lg text-slate-400 hover:text-white"
+    >
+      <X className="w-5 h-5" />
+    </button>
+  </div>
+</div>
 
         {/* Current Portal Badge */}
         <div className="px-4 pt-4 pb-2">

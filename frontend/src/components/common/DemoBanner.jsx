@@ -24,14 +24,7 @@ export const DemoBanner = () => {
       <div className="flex items-center gap-2 flex-wrap">
   
 
-        <button
-          onClick={resetDemoData}
-          title="Reset all demo data to initial state"
-          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors"
-        >
-          <RotateCcw className="w-3 h-3 text-slate-400" />
-          <span className="hidden md:inline">Reset Demo</span>
-        </button>
+        
       </div>
     </aside>
   );

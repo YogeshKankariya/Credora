@@ -11,10 +11,7 @@ export const Navbar = () => {
             <ShieldCheck className="w-5 h-5 text-white" />
           </div>
           <div>
-            <span className="font-bold text-base text-white tracking-tight">Decentralized Banking Identity</span>
-            <span className="hidden sm:inline-block ml-2 text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-              KYC PROTOCOL
-            </span>
+            <span className="font-bold text-base text-white tracking-tight">CREDORA</span>
           </div>
         </Link>
       </div>

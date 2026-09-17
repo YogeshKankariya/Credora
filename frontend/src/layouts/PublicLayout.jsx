@@ -13,8 +13,7 @@ export const PublicLayout = () => {
         <Outlet />
       </main>
       <footer className="border-t border-slate-900 bg-slate-950/80 py-8 text-center text-xs text-slate-400">
-        <p>Decentralized Banking Identity & KYC Verification Platform • Prototype Demo</p>
-        <p className="text-[11px] text-slate-400 mt-1">Verify Once, Trust Many Times • Synthetic Data Only</p>
+        <p>CREDORA • Prototype Demo</p>
       </footer>
       <ToastContainer />
     </div>
