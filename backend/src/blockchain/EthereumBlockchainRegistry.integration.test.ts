@@ -18,6 +18,7 @@ describe.skipIf(!canRunIntegrationTest)(
         rpcUrl: rpcUrl!,
         contractAddress: contractAddress!,
         privateKey: privateKey!,
+        network: "localhost",
       });
 
       const credentialId = `integration-test-${Date.now()}`;
@@ -26,11 +27,17 @@ describe.skipIf(!canRunIntegrationTest)(
       const issuer =
         "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266";
 
-      await registry.registerCredential(
+      const registration = await registry.registerCredential(
         credentialId,
         credentialHash,
         issuer
       );
+
+      expect(registration.transactionHash).toMatch(/^0x[0-9a-f]{64}$/i);
+      expect(registration.blockNumber).toBeGreaterThan(0);
+      expect(registration.contractAddress).toBe(contractAddress);
+      expect(registration.network).toBe("localhost");
+      expect(registration.registrationStatus).toBe("CONFIRMED");
 
       const active =
         await registry.getCredential(credentialId);
@@ -45,7 +52,10 @@ describe.skipIf(!canRunIntegrationTest)(
       expect(active.issuedAt).toBeGreaterThan(0);
       expect(active.status).toBe("ACTIVE");
 
-      await registry.revokeCredential(credentialId);
+      const revocation = await registry.revokeCredential(credentialId);
+
+      expect(revocation.transactionHash).toMatch(/^0x[0-9a-f]{64}$/i);
+      expect(revocation.blockNumber).toBeGreaterThan(0);
 
       const revoked =
         await registry.getCredential(credentialId);

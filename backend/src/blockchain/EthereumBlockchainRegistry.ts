@@ -1,6 +1,8 @@
 import { Contract, JsonRpcProvider, Wallet } from "ethers";
 import type {
   BlockchainCredentialRecord,
+  BlockchainRegistrationResult,
+  BlockchainRevocationResult,
   BlockchainRegistry,
 } from "@hack2ignite/shared/schemas/blockchain";
 import {
@@ -13,12 +15,15 @@ export interface EthereumBlockchainRegistryConfig {
   rpcUrl: string;
   contractAddress: string;
   privateKey: string;
+  network?: string;
 }
 
 export class EthereumBlockchainRegistry
   implements BlockchainRegistry
 {
   private readonly contract: Contract;
+  private readonly contractAddress: string;
+  private readonly network: string;
 
   constructor(config: EthereumBlockchainRegistryConfig) {
     const provider = new JsonRpcProvider(config.rpcUrl);
@@ -29,13 +34,15 @@ export class EthereumBlockchainRegistry
       KYC_REGISTRY_ABI,
       wallet
     );
+    this.contractAddress = config.contractAddress;
+    this.network = config.network ?? "unknown";
   }
 
   async registerCredential(
     credentialId: string,
     credentialHash: string,
     issuer: string
-  ): Promise<void> {
+  ): Promise<BlockchainRegistrationResult> {
     const blockchainCredentialId =
       credentialIdToBytes32(credentialId);
 
@@ -48,7 +55,18 @@ export class EthereumBlockchainRegistry
       issuer
     );
 
-    await tx.wait();
+    const receipt = await tx.wait();
+    if (!receipt) {
+      throw new Error("Blockchain registration transaction was not mined");
+    }
+
+    return {
+      transactionHash: tx.hash,
+      blockNumber: receipt.blockNumber,
+      contractAddress: this.contractAddress,
+      network: this.network,
+      registrationStatus: "CONFIRMED",
+    };
   }
 
   async getCredential(
@@ -86,7 +104,7 @@ export class EthereumBlockchainRegistry
 
   async revokeCredential(
     credentialId: string
-  ): Promise<void> {
+  ): Promise<BlockchainRevocationResult> {
     const blockchainCredentialId =
       credentialIdToBytes32(credentialId);
 
@@ -94,6 +112,14 @@ export class EthereumBlockchainRegistry
       blockchainCredentialId
     );
 
-    await tx.wait();
+    const receipt = await tx.wait();
+    if (!receipt) {
+      throw new Error("Blockchain revocation transaction was not mined");
+    }
+
+    return {
+      transactionHash: tx.hash,
+      blockNumber: receipt.blockNumber,
+    };
   }
 }

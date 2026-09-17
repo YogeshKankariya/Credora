@@ -1,99 +1,97 @@
-/**
- * BlockchainService
- *
- * Stub for on-chain credential registration and revocation.
- * Will be replaced with real ethers.js calls when the smart contract is deployed.
- *
- * Current behavior: simulates a blockchain transaction with a fake tx hash
- * so the rest of the system can be developed and tested without a live chain.
- */
+import { Wallet } from "ethers";
+import { EthereumBlockchainRegistry } from "../blockchain/EthereumBlockchainRegistry.js";
+import { blockchainConfig } from "../config/blockchain.js";
+import type {
+  BlockchainCredentialRecord,
+  BlockchainRegistrationResult,
+  BlockchainRevocationResult,
+} from "@hack2ignite/shared/schemas/blockchain";
 
-import crypto from "crypto";
+function createRegistry(): EthereumBlockchainRegistry {
+  if (!blockchainConfig.rpcUrl) {
+    throw new Error("BLOCKCHAIN_RPC_URL is not configured");
+  }
 
-export interface BlockchainRegistrationResult {
-  transactionHash: string;
-  blockNumber: number;
-  contractAddress: string;
-  network: string;
-  registrationStatus: "CONFIRMED" | "PENDING" | "FAILED";
+  if (!blockchainConfig.privateKey) {
+    throw new Error("BLOCKCHAIN_PRIVATE_KEY is not configured");
+  }
+
+  if (!blockchainConfig.contractAddress) {
+    throw new Error("KYC_REGISTRY_ADDRESS is not configured");
+  }
+
+  return new EthereumBlockchainRegistry({
+    rpcUrl: blockchainConfig.rpcUrl,
+    privateKey: blockchainConfig.privateKey,
+    contractAddress: blockchainConfig.contractAddress,
+    network: blockchainConfig.network,
+  });
 }
 
-export interface BlockchainRevocationResult {
-  transactionHash: string;
-  success: boolean;
+function getIssuerAddress(): string {
+  if (!blockchainConfig.privateKey) {
+    throw new Error("BLOCKCHAIN_PRIVATE_KEY is not configured");
+  }
+
+  const wallet = new Wallet(blockchainConfig.privateKey);
+  return wallet.address;
 }
 
 /**
- * Register a credential hash on the blockchain.
- *
- * STUB: Returns a simulated transaction result.
- * Replace with: await contract.registerCredential(credentialHash);
+ * Register a credential on the real Ethereum-compatible blockchain.
  */
 export async function registerCredential(
-  credentialHash: string
+  credentialId: string,
+  credentialHash: string,
+  issuer?: string
 ): Promise<BlockchainRegistrationResult> {
-  // TODO: Replace with real ethers.js call
-  // const provider = new ethers.JsonRpcProvider(blockchainConfig.rpcUrl);
-  // const wallet = new ethers.Wallet(blockchainConfig.privateKey, provider);
-  // const contract = new ethers.Contract(blockchainConfig.contractAddress, ABI, wallet);
-  // const tx = await contract.registerCredential(credentialHash);
-  // const receipt = await tx.wait();
+  const registry = createRegistry();
 
-  // Simulate blockchain latency
-  await new Promise((resolve) => setTimeout(resolve, 100));
+  // For the current MVP, the backend blockchain wallet is the
+  // on-chain issuer. The Solidity contract enforces this address
+  // as the revocation authority.
+  const issuerAddress = issuer ?? getIssuerAddress();
 
-  const fakeHash = "0x" + crypto.randomBytes(32).toString("hex");
-  const fakeBlock = Math.floor(Math.random() * 1_000_000) + 4_000_000;
-
-  console.log(`[blockchain.stub] Registered credential hash ${credentialHash.slice(0, 16)}... → tx ${fakeHash.slice(0, 16)}...`);
-
-  return {
-    transactionHash: fakeHash,
-    blockNumber: fakeBlock,
-    contractAddress: process.env["CONTRACT_ADDRESS"] ?? "0x0000000000000000000000000000000000000000",
-    network: process.env["BLOCKCHAIN_NETWORK"] ?? "localhost",
-    registrationStatus: "CONFIRMED",
-  };
+  return registry.registerCredential(
+    credentialId,
+    credentialHash,
+    issuerAddress
+  );
 }
 
 /**
- * Revoke a credential hash on the blockchain.
- *
- * STUB: Returns a simulated revocation transaction.
- * Replace with: await contract.revokeCredential(credentialHash);
+ * Revoke a credential on the real blockchain.
  */
 export async function revokeCredentialOnChain(
-  credentialHash: string
+  credentialId: string
 ): Promise<BlockchainRevocationResult> {
-  // TODO: Replace with real ethers.js call
+  const registry = createRegistry();
 
-  await new Promise((resolve) => setTimeout(resolve, 100));
-
-  const fakeHash = "0x" + crypto.randomBytes(32).toString("hex");
-
-  console.log(`[blockchain.stub] Revoked credential hash ${credentialHash.slice(0, 16)}... → tx ${fakeHash.slice(0, 16)}...`);
-
-  return { transactionHash: fakeHash, success: true };
+  return registry.revokeCredential(credentialId);
 }
 
 /**
- * Check if a credential hash is registered on the blockchain.
- *
- * STUB: Always returns true for existing hashes.
- * Replace with: return await contract.isRegistered(credentialHash);
+ * Check whether a credential is currently registered on-chain.
  */
 export async function isCredentialOnChain(
-  _credentialHash: string
+  credentialId: string
 ): Promise<boolean> {
-  // TODO: Replace with real ethers.js call
-  await new Promise((resolve) => setTimeout(resolve, 50));
-  return true; // Stub always passes blockchain check
+  const record = await getCredentialOnChain(credentialId);
+  return record.status === "ACTIVE";
+}
+
+export async function getCredentialOnChain(
+  credentialId: string
+): Promise<BlockchainCredentialRecord> {
+  const registry = createRegistry();
+  return registry.getCredential(credentialId);
 }
 
 export const blockchainService = {
   registerCredential,
   revokeCredentialOnChain,
   isCredentialOnChain,
+  getCredentialOnChain,
 };
 
 export default blockchainService;

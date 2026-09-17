@@ -50,6 +50,19 @@ export interface BlockchainCredentialRecord {
   status: BlockchainCredentialStatus;
 }
 
+export interface BlockchainRegistrationResult {
+  transactionHash: string;
+  blockNumber: number;
+  contractAddress: string;
+  network: string;
+  registrationStatus: "CONFIRMED";
+}
+
+export interface BlockchainRevocationResult {
+  transactionHash: string;
+  blockNumber: number;
+}
+
 /**
  * Application-level blockchain registry abstraction.
  *
@@ -64,7 +77,7 @@ export interface BlockchainRegistry {
     credentialId: string,
     credentialHash: string,
     issuer: string
-  ): Promise<void>;
+  ): Promise<BlockchainRegistrationResult>;
 
   /**
    * Retrieve the current blockchain record.
@@ -83,7 +96,7 @@ export interface BlockchainRegistry {
    */
   revokeCredential(
     credentialId: string
-  ): Promise<void>;
+  ): Promise<BlockchainRevocationResult>;
 }
 
 /**

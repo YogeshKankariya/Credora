@@ -113,18 +113,31 @@ async function verify(input: VerificationInput): Promise<VerificationResult> {
   checks.hashIntegrity = recomputedHash === credential.credentialHash;
 
   // ── Check 5: Blockchain ───────────────────────────────────────────────────
+  let onChainStatus: "ACTIVE" | "REVOKED" | "NOT_FOUND" = "NOT_FOUND";
   try {
-    checks.blockchain = await blockchainService.isCredentialOnChain(credential.credentialHash);
+    const onChainCredential = await blockchainService.getCredentialOnChain(
+      credential.credentialId
+    );
+    onChainStatus = onChainCredential.status;
+    checks.blockchain =
+      onChainCredential.status !== "NOT_FOUND" &&
+      onChainCredential.credentialHash.replace(/^0x/, "").toLowerCase() ===
+        credential.credentialHash.toLowerCase();
   } catch {
     checks.blockchain = false;
   }
 
   // ── Check 6: Status Active ────────────────────────────────────────────────
-  const now = new Date();
+    const now = new Date();
   const isStatusActive = credential.status === "ACTIVE";
   const hasNoRevocation = !credential.revocation;
   const isNotExpired = credential.expiresAt.getTime() > now.getTime();
-  checks.statusActive = isStatusActive && hasNoRevocation && isNotExpired;
+
+  checks.statusActive =
+    isStatusActive &&
+    hasNoRevocation &&
+    isNotExpired &&
+    onChainStatus === "ACTIVE";
 
   return await saveAndReturn(checks, credentialId, purpose, verifierId, credential.id);
 }

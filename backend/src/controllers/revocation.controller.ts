@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { z } from "zod";
 import prisma from "../config/database.js";
+import { blockchainService } from "../services/blockchain.service.js";
 import { sendSuccess, sendError, sendServerError } from "../utils/response.js";
 import { param } from "../utils/params.js";
 
@@ -42,6 +43,12 @@ export async function revokeCredential(req: Request, res: Response): Promise<voi
       return;
     }
 
+    // The contract is the final authorization boundary. Only update local state
+    // after its confirmed transaction succeeds.
+    const blockchainResult = await blockchainService.revokeCredentialOnChain(
+      credentialId
+    );
+
     // Revoke in transaction: update credential status + create revocation record
     const [updatedCredential, revocation] = await prisma.$transaction([
       prisma.credential.update({
@@ -53,7 +60,7 @@ export async function revokeCredential(req: Request, res: Response): Promise<voi
           credentialId: credential.id,
           revokedById: issuerId,
           reason,
-          // blockchainTxHash will be filled in when blockchain integration is added
+          blockchainTxHash: blockchainResult.transactionHash,
         },
       }),
     ]);

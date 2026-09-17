@@ -96,9 +96,12 @@ async function issue(input: IssueCredentialInput) {
     },
   });
 
-  // ── 6. Register on blockchain (stub — replace with real ethers.js) ─────────
+  // ── 6. Register on blockchain ─────────────────────────────────────────────
   try {
-    const blockchainResult = await blockchainService.registerCredential(credentialHash);
+    const blockchainResult = await blockchainService.registerCredential(
+      credential.credentialId,
+      credentialHash
+    );
     await prisma.blockchainRecord.create({
       data: {
         credentialId: credential.id,

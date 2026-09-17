@@ -1,5 +1,7 @@
 import type {
   BlockchainCredentialRecord,
+  BlockchainRegistrationResult,
+  BlockchainRevocationResult,
   BlockchainRegistry,
 } from "@hack2ignite/shared/schemas/blockchain";
 
@@ -13,7 +15,7 @@ export class MockBlockchainRegistry implements BlockchainRegistry {
     credentialId: string,
     credentialHash: string,
     issuer: string
-  ): Promise<void> {
+  ): Promise<BlockchainRegistrationResult> {
     if (this.credentials.has(credentialId)) {
       throw new Error("Credential already registered");
     }
@@ -25,6 +27,14 @@ export class MockBlockchainRegistry implements BlockchainRegistry {
       issuedAt: Math.floor(Date.now() / 1000),
       status: "ACTIVE",
     });
+
+    return {
+      transactionHash: `mock-registration-${credentialId}`,
+      blockNumber: 1,
+      contractAddress: "0xMockContract",
+      network: "mock",
+      registrationStatus: "CONFIRMED",
+    };
   }
 
   async getCredential(
@@ -45,7 +55,9 @@ export class MockBlockchainRegistry implements BlockchainRegistry {
     return { ...credential };
   }
 
-  async revokeCredential(credentialId: string): Promise<void> {
+  async revokeCredential(
+    credentialId: string
+  ): Promise<BlockchainRevocationResult> {
     const credential = this.credentials.get(credentialId);
 
     if (!credential) {
@@ -60,5 +72,10 @@ export class MockBlockchainRegistry implements BlockchainRegistry {
       ...credential,
       status: "REVOKED",
     });
+
+    return {
+      transactionHash: `mock-revocation-${credentialId}`,
+      blockNumber: 2,
+    };
   }
 }
