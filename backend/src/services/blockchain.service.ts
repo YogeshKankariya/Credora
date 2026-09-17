@@ -5,6 +5,7 @@ import type {
   BlockchainCredentialRecord,
   BlockchainRegistrationResult,
   BlockchainRevocationResult,
+  BlockchainRegistry,
 } from "@hack2ignite/shared/schemas/blockchain";
 
 function createRegistry(): EthereumBlockchainRegistry {
@@ -28,13 +29,47 @@ function createRegistry(): EthereumBlockchainRegistry {
   });
 }
 
-function getIssuerAddress(): string {
-  if (!blockchainConfig.privateKey) {
+let registryInstance: BlockchainRegistry | null = null;
+
+/**
+ * Obtain the configured BlockchainRegistry instance.
+ * Returns test-injected registry if set, otherwise lazily creates EthereumBlockchainRegistry.
+ */
+export function getRegistry(): BlockchainRegistry {
+  if (!registryInstance) {
+    registryInstance = createRegistry();
+  }
+  return registryInstance;
+}
+
+/**
+ * Override the BlockchainRegistry instance (e.g. for testing with MockBlockchainRegistry).
+ */
+export function setRegistry(registry: BlockchainRegistry | null): void {
+  registryInstance = registry;
+}
+
+/**
+ * Derive the MVP issuer Ethereum address safely from the configured private key.
+ */
+export function getExpectedIssuerAddress(): string | null {
+  if (!blockchainConfig.privateKey) return null;
+  try {
+    return new Wallet(blockchainConfig.privateKey).address;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Get the required issuer address, throwing if private key is not configured.
+ */
+export function getIssuerAddress(): string {
+  const address = getExpectedIssuerAddress();
+  if (!address) {
     throw new Error("BLOCKCHAIN_PRIVATE_KEY is not configured");
   }
-
-  const wallet = new Wallet(blockchainConfig.privateKey);
-  return wallet.address;
+  return address;
 }
 
 /**
@@ -45,7 +80,7 @@ export async function registerCredential(
   credentialHash: string,
   issuer?: string
 ): Promise<BlockchainRegistrationResult> {
-  const registry = createRegistry();
+  const registry = getRegistry();
 
   // For the current MVP, the backend blockchain wallet is the
   // on-chain issuer. The Solidity contract enforces this address
@@ -65,7 +100,7 @@ export async function registerCredential(
 export async function revokeCredentialOnChain(
   credentialId: string
 ): Promise<BlockchainRevocationResult> {
-  const registry = createRegistry();
+  const registry = getRegistry();
 
   return registry.revokeCredential(credentialId);
 }
@@ -83,11 +118,15 @@ export async function isCredentialOnChain(
 export async function getCredentialOnChain(
   credentialId: string
 ): Promise<BlockchainCredentialRecord> {
-  const registry = createRegistry();
+  const registry = getRegistry();
   return registry.getCredential(credentialId);
 }
 
 export const blockchainService = {
+  getRegistry,
+  setRegistry,
+  getExpectedIssuerAddress,
+  getIssuerAddress,
   registerCredential,
   revokeCredentialOnChain,
   isCredentialOnChain,
