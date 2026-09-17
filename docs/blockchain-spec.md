@@ -1,6 +1,8 @@
 # Blockchain Specification
 
-**Project:** Hack2Ignite — Decentralized Banking Identity & KYC Verification  
+**Project:** Credora — Decentralized Banking Identity & KYC Verification Platform  
+**Team:** 404NotFound  
+**Hackathon:** Hack2Ignite 2026  
 **Version:** 1.0  
 **Status:** Frozen for MVP  
 **Owner:** Blockchain + Integration Owner
