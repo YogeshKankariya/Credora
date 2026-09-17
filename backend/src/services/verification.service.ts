@@ -18,6 +18,7 @@
 import prisma from "../config/database.js";
 import { cryptoService } from "./crypto.service.js";
 import { blockchainService } from "./blockchain.service.js";
+import { sha256ToBytes32 } from "../crypto/blockchainHash.js";
 
 export interface VerificationInput {
   credentialId: string;
@@ -115,29 +116,43 @@ async function verify(input: VerificationInput): Promise<VerificationResult> {
   // ── Check 5: Blockchain ───────────────────────────────────────────────────
   let onChainStatus: "ACTIVE" | "REVOKED" | "NOT_FOUND" = "NOT_FOUND";
   try {
-    const onChainCredential = await blockchainService.getCredentialOnChain(
-      credential.credentialId
-    );
-    onChainStatus = onChainCredential.status;
-    checks.blockchain =
-      onChainCredential.status !== "NOT_FOUND" &&
-      onChainCredential.credentialHash.replace(/^0x/, "").toLowerCase() ===
-        credential.credentialHash.toLowerCase();
+    const registry = blockchainService.getRegistry();
+    const expectedIssuer = blockchainService.getExpectedIssuerAddress();
+
+    const onChain = await registry.getCredential(credential.credentialId);
+    onChainStatus = onChain.status;
+
+    const existsOnChain = onChain.status !== "NOT_FOUND" && onChain.issuedAt > 0;
+    let hashMatches = false;
+    let issuerMatches = false;
+
+    if (existsOnChain && onChain.credentialHash) {
+      hashMatches =
+        sha256ToBytes32(onChain.credentialHash) ===
+        sha256ToBytes32(credential.credentialHash);
+      issuerMatches =
+        expectedIssuer !== null &&
+        Boolean(onChain.issuer) &&
+        onChain.issuer.toLowerCase() === expectedIssuer.toLowerCase();
+    }
+
+    checks.blockchain = existsOnChain && hashMatches && issuerMatches;
   } catch {
     checks.blockchain = false;
   }
 
   // ── Check 6: Status Active ────────────────────────────────────────────────
-    const now = new Date();
+  const now = new Date();
   const isStatusActive = credential.status === "ACTIVE";
   const hasNoRevocation = !credential.revocation;
   const isNotExpired = credential.expiresAt.getTime() > now.getTime();
+  const isOnChainActive = onChainStatus === "ACTIVE";
 
   checks.statusActive =
     isStatusActive &&
     hasNoRevocation &&
     isNotExpired &&
-    onChainStatus === "ACTIVE";
+    isOnChainActive;
 
   return await saveAndReturn(checks, credentialId, purpose, verifierId, credential.id);
 }
