@@ -111,12 +111,30 @@ function formatCredential(c) {
   };
 }
 
+const DEMO_CUSTOMER = {
+  id: 'demo-customer-001',
+  dbId: 'demo-customer-001',
+  name: 'Rahul Sharma',
+  email: 'rahul.sharma@demo-identity.org',
+  did: 'did:demo:7f92a8c1e92d8471bb90a42f8',
+  publicKey: '',
+  identityCreated: '10 Aug 2026',
+  keyStatus: 'Hardware Enclave Secured',
+  identityStatus: 'Verified',
+  kycStatus: 'Verified',
+  currentCredentialId: 'KYC-DEMO-001',
+  dob: '15/05/1992 (Synthetic)',
+  address: '402 Skyline Boulevard, Demo Tech Park, Bangalore 560103',
+  documentType: 'Synthetic Government Photo ID',
+  documentNumber: 'DEMO-ID-8829-4102',
+  avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+};
+
 export const KYCProvider = ({ children }) => {
   const [users, setUsers] = useState(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.USERS);
-    return saved ? JSON.parse(saved) : [];
-  });
-
+  const saved = localStorage.getItem(STORAGE_KEYS.USERS);
+  return saved ? JSON.parse(saved) : [DEMO_CUSTOMER];
+});
   const [banks, setBanks] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.BANKS);
     return saved ? JSON.parse(saved) : [];
@@ -137,8 +155,8 @@ export const KYCProvider = ({ children }) => {
   });
 
   const [activeCustomerId, setActiveCustomerId] = useState(() => {
-    return localStorage.getItem(STORAGE_KEYS.ACTIVE_CUSTOMER) || '';
-  });
+  return localStorage.getItem(STORAGE_KEYS.ACTIVE_CUSTOMER) || DEMO_CUSTOMER.id;
+});
 
   const [activeBankId, setActiveBankId] = useState(() => {
     return localStorage.getItem(STORAGE_KEYS.ACTIVE_BANK) || 'DNB-IN-BB';
@@ -191,11 +209,18 @@ export const KYCProvider = ({ children }) => {
   // Authenticate and fetch live database data
   const loadBackendData = useCallback(async (role = currentRole) => {
     try {
-      const creds = ROLE_ACCOUNTS[role] || ROLE_ACCOUNTS.customer;
-      const authRes = await api.post('/auth/login', creds);
-      if (authRes.data?.token) {
-        setToken(authRes.data.token);
-      }
+      // Customer demo works without backend authentication.
+// Bank roles can continue using the backend.
+if (role === 'customer') {
+  return;
+}
+
+const creds = ROLE_ACCOUNTS[role];
+const authRes = await api.post('/auth/login', creds);
+
+if (authRes.data?.token) {
+  setToken(authRes.data.token);
+}
 
       // Fetch in parallel
       const [banksRes, customersRes, credsRes, historyRes] = await Promise.allSettled([

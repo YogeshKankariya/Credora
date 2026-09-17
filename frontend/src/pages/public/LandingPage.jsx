@@ -40,7 +40,7 @@ export const LandingPage = () => {
 
         <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
           <Link
-            to="/login"
+            to="/login-page"
             className="flex items-center gap-2.5 px-6 py-3.5 rounded-xl font-semibold text-white bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 shadow-xl shadow-cyan-900/30 transition-all hover:scale-105"
           >
             <span>Get Started</span>

@@ -19,15 +19,10 @@ export const DemoBanner = () => {
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
           <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
         </span>
-        <span className="font-semibold text-cyan-400">DEMO ENVIRONMENT</span>
-        <span className="hidden sm:inline text-slate-500">•</span>
-        <span className="text-slate-400 hidden sm:inline">Synthetic data only. Verify once, trust many times.</span>
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
-        <div className="flex items-center bg-slate-950/80 rounded-lg p-1 border border-slate-800">
-         
-        </div>
+  
 
         <button
           onClick={resetDemoData}

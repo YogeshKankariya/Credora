@@ -50,11 +50,6 @@ export const Sidebar = ({
         icon: Award,
       },
       {
-        name: 'Share Credential',
-        path: '/customer/share',
-        icon: Share2,
-      },
-      {
         name: 'Verification History',
         path: '/customer/history',
         icon: History,
@@ -164,7 +159,7 @@ export const Sidebar = ({
           `}
         >
           <Link
-            to="/"
+            to=""
             className="flex items-center gap-2.5 min-w-0"
           >
             {/* Logo */}
@@ -322,32 +317,6 @@ export const Sidebar = ({
 
         {/* Footer */}
         <div className="p-4 border-t border-slate-800 text-xs text-slate-500">
-          <div
-            className={`
-              flex items-center gap-2
-              ${isCollapsed ? 'md:justify-center' : ''}
-            `}
-            title={isCollapsed ? 'Cryptographic W3C VC' : undefined}
-          >
-            <KeyRound className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-
-            {!isCollapsed && (
-              <span className="text-slate-400 hidden md:block whitespace-nowrap">
-                Cryptographic W3C VC
-              </span>
-            )}
-
-            {/* Mobile */}
-            <span className="text-slate-400 md:hidden">
-              Cryptographic W3C VC
-            </span>
-          </div>
-
-          {!isCollapsed && (
-            <p className="mt-1 text-[11px] text-slate-400 hidden md:block">
-              Ed25519 & secp256k1 Signed
-            </p>
-          )}
         </div>
       </aside>
     </>

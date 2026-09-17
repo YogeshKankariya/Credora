@@ -57,28 +57,6 @@ export const CustomerSettings = () => {
         </div>
       </div>
 
-      {/* Hardware Enclave Status */}
-      <div className="glass-card rounded-2xl p-6 border border-slate-800 space-y-3">
-        <div className="flex items-center gap-3 pb-3 border-b border-slate-800">
-          <ShieldCheck className="w-5 h-5 text-emerald-400" />
-          <h3 className="text-base font-bold text-white">Hardware Key Enclave</h3>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-          <div className="p-3 bg-slate-950 rounded-xl border border-slate-800">
-            <span className="text-slate-500 block">Enclave Driver</span>
-            <span className="text-white font-mono font-medium mt-0.5 block">W3C WebCrypto API</span>
-          </div>
-          <div className="p-3 bg-slate-950 rounded-xl border border-slate-800">
-            <span className="text-slate-500 block">Storage Mechanism</span>
-            <span className="text-emerald-400 font-mono font-medium mt-0.5 block">Isolated Secure Element</span>
-          </div>
-          <div className="p-3 bg-slate-950 rounded-xl border border-slate-800">
-            <span className="text-slate-500 block">Curve</span>
-            <span className="text-cyan-400 font-mono font-medium mt-0.5 block">secp256k1 & Ed25519</span>
-          </div>
-        </div>
-      </div>
-
       {/* Reset State */}
       <div className="glass-card rounded-2xl p-6 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

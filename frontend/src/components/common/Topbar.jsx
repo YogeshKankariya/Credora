@@ -61,12 +61,12 @@ export const Topbar = ({ onToggleSidebar }) => {
 
       <div className="flex items-center gap-3">
         <Link
-          to="/login"
+          to="/login-page"
           title="Switch Role"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-cyan-400 hover:text-cyan-300 font-semibold hover:underline cursor-pointer transition-colors"
         >
           <LogOut className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Switch Role</span>
+          <span className="hidden sm:inline">Logout</span>
         </Link>
       </div>
     </header>

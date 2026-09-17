@@ -9,6 +9,8 @@ import { DashboardLayout } from './layouts/DashboardLayout';
 // Public Pages
 import { LandingPage } from './pages/public/LandingPage';
 import { RoleSelectionPage } from './pages/public/RoleSelectionPage';
+import { LoginPage } from './pages/public/LoginPage';
+import { SigninPage } from './pages/public/SigninPage';
 
 // Customer Pages
 import { CustomerOverview } from './pages/customer/CustomerOverview';
@@ -17,6 +19,7 @@ import { KYCCredential } from './pages/customer/KYCCredential';
 import { ShareCredential } from './pages/customer/ShareCredential';
 import { CustomerHistory } from './pages/customer/CustomerHistory';
 import { CustomerSettings } from './pages/customer/CustomerSettings';
+
 
 // Bank Issuer Pages
 import { IssuerOverview } from './pages/issuer/IssuerOverview';
@@ -43,6 +46,8 @@ function App() {
           <Route element={<PublicLayout />}>
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<RoleSelectionPage />} />
+            <Route path="/signin-page" element={<SigninPage />} />
+            <Route path="/login-page" element={<LoginPage />} />
           </Route>
 
           {/* Customer / Individual Dashboard */}

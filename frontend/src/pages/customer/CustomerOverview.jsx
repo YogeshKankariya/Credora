@@ -205,12 +205,6 @@ export const CustomerOverview = () => {
             {currentCustomer.name} has completed registration. Switch to the Bank Issuer portal to review documents and issue the cryptographic credential.
           </p>
           <div className="pt-2">
-            <Link
-              to="/bank/issuer/customers"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold"
-            >
-              <span>Go to Bank Issuer Portal</span>
-            </Link>
           </div>
         </div>
       )}

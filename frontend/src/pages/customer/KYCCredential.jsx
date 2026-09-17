@@ -35,12 +35,6 @@ export const KYCCredential = () => {
         <p className="text-sm text-slate-400">
           This profile has not yet been issued a cryptographic KYC credential.
         </p>
-        <Link
-          to="/bank/issuer/customers"
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold"
-        >
-          <span>Issue Credential via Bank Issuer</span>
-        </Link>
       </div>
     );
   }
