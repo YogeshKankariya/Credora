@@ -1,0 +1,7 @@
+{
+  "name": "@hack2ignite/shared",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./schemas/blockchain.ts",
+  "types": "./schemas/blockchain.ts"
+}
