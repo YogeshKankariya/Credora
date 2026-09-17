@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import { z } from "zod";
 import prisma from "../config/database.js";
 import { sendSuccess, sendCreated, sendError, sendServerError } from "../utils/response.js";
+import { cryptoService } from "../services/crypto.service.js";
 
 // ─── Validation schemas ───────────────────────────────────────────────────────
 
@@ -15,8 +16,12 @@ const RegisterSchema = z.object({
 });
 
 const LoginSchema = z.object({
-  email: z.string().email(),
+  name: z.string().optional(),
+  email: z.string().email().optional(),
+  bankId: z.string().optional(),
   password: z.string(),
+}).refine(data => data.email || data.bankId, {
+  message: "Either email or bankId must be provided"
 });
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -28,13 +33,24 @@ function signToken(userId: string, role: string, email: string): string {
   return jwt.sign({ userId, role, email }, secret, { expiresIn } as jwt.SignOptions);
 }
 
+/** Extract a human-readable message from Zod validation errors */
+function formatZodError(error: z.ZodError): string {
+  if (error.issues && error.issues.length > 0) {
+    return error.issues.map((issue) => {
+      const path = issue.path.length > 0 ? `${issue.path.join(".")}: ` : "";
+      return `${path}${issue.message}`;
+    }).join("; ");
+  }
+  return "Validation failed";
+}
+
 // ─── Controllers ─────────────────────────────────────────────────────────────
 
 export async function register(req: Request, res: Response): Promise<void> {
   try {
     const parsed = RegisterSchema.safeParse(req.body);
     if (!parsed.success) {
-      sendError(res, "Validation failed", 400, parsed.error.message);
+      sendError(res, "Validation failed", 400, formatZodError(parsed.error));
       return;
     }
 
@@ -47,13 +63,53 @@ export async function register(req: Request, res: Response): Promise<void> {
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
-    const user = await prisma.user.create({
-      data: { name, email, passwordHash, role },
-      select: { id: true, name: true, email: true, role: true, createdAt: true },
+
+    // Generate keys BEFORE the transaction so it doesn't block DB
+    const keys = cryptoService.generateKeyPair();
+
+    // ── Atomic transaction: User + Profile together ──────────────────────────
+    const result = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: { name, email, passwordHash, role },
+        select: { id: true, name: true, email: true, role: true, createdAt: true },
+      });
+
+      if (role === "CUSTOMER") {
+        const did = cryptoService.generateDID(keys.publicKey);
+        await tx.customerProfile.create({
+          data: {
+            userId: user.id,
+            did,
+            publicKey: keys.publicKey,
+            identityStatus: "CREATED",  // IdentityStatus: CREATED | VERIFIED | SUSPENDED
+            kycStatus: "PENDING",       // KycStatus: PENDING | UNDER_REVIEW | VERIFIED | REJECTED
+            keyStatus: "ACTIVE",        // KeyStatus: ACTIVE | ROTATED | REVOKED
+          },
+        });
+      } else {
+        // Banks (ISSUER / VERIFIER)
+        const institutionCode = `BANK-${Date.now().toString(36).toUpperCase()}`;
+        const did = cryptoService.generateInstitutionDID(institutionCode, keys.publicKey);
+        await tx.institutionProfile.create({
+          data: {
+            userId: user.id,
+            name,
+            shortName: name.substring(0, 3).toUpperCase(),
+            institutionCode,
+            did,
+            publicKey: keys.publicKey,
+            role: role === "ISSUER" ? "ISSUER" : "VERIFIER",
+            status: "ACTIVE",
+            accreditedDate: new Date(),
+          },
+        });
+      }
+
+      return user;
     });
 
-    const token = signToken(user.id, user.role, user.email);
-    sendCreated(res, { user, token }, "Registration successful");
+    const token = signToken(result.id, result.role, result.email);
+    sendCreated(res, { user: result, token }, "Registration successful");
   } catch (err) {
     console.error("[auth.register]", err);
     sendServerError(res);
@@ -64,22 +120,45 @@ export async function login(req: Request, res: Response): Promise<void> {
   try {
     const parsed = LoginSchema.safeParse(req.body);
     if (!parsed.success) {
-      sendError(res, "Validation failed", 400, parsed.error.message);
+      sendError(res, "Validation failed", 400, formatZodError(parsed.error));
       return;
     }
 
-    const { email, password } = parsed.data;
+    const { name, email, bankId, password } = parsed.data;
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    let user;
+    if (bankId) {
+      // Look up bank by institution code
+      const bank = await prisma.institutionProfile.findUnique({
+        where: { institutionCode: bankId },
+        include: { user: true },
+      });
+      if (!bank || !bank.user) {
+        sendError(res, "Invalid Bank ID or password", 401);
+        return;
+      }
+      user = bank.user;
+    } else if (email) {
+      user = await prisma.user.findUnique({ where: { email } });
+    }
+
     if (!user) {
-      sendError(res, "Invalid email or password", 401);
+      sendError(res, "Invalid credentials", 401);
       return;
     }
 
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
-      sendError(res, "Invalid email or password", 401);
+      sendError(res, "Invalid credentials", 401);
       return;
+    }
+
+    // If customer entered/updated their name during login, update the user record
+    if (name && name.trim()) {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { name: name.trim() },
+      });
     }
 
     const token = signToken(user.id, user.role, user.email);
@@ -99,7 +178,6 @@ export async function login(req: Request, res: Response): Promise<void> {
 
 export async function logout(_req: Request, res: Response): Promise<void> {
   // JWT is stateless — client should discard the token.
-  // If you add token blocklist (Redis), implement it here.
   sendSuccess(res, null, "Logged out successfully");
 }
 

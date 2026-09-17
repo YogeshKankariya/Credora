@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   User,
   Mail,
@@ -9,22 +9,50 @@ import {
   ArrowRight,
   ShieldCheck,
   ArrowLeft,
-  KeyRound
+  KeyRound,
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
+import { useKYC } from '../../context/KYCContext';
 
 export const SigninPage = () => {
+  const { registerCustomer } = useKYC();
+  const navigate = useNavigate();
+
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // UI only - actual registration logic not implemented yet
+    setError('');
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await registerCustomer({ name: fullName, email, password });
+      navigate('/customer');
+    } catch (err) {
+      setError(err?.message || 'Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
+
 
   return (
     <div className="min-h-[85vh] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 max-w-md mx-auto w-full relative">
@@ -52,6 +80,13 @@ export const SigninPage = () => {
 
         {/* Registration Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Error Banner */}
+          {error && (
+            <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
           {/* Full Name */}
           <div>
             <label
@@ -188,10 +223,14 @@ export const SigninPage = () => {
           <div className="pt-2">
             <button
               type="submit"
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 shadow-lg shadow-cyan-950/50 hover:shadow-cyan-500/20 transition-all duration-200 cursor-pointer"
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 shadow-lg shadow-cyan-950/50 hover:shadow-cyan-500/20 transition-all duration-200 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <span>Create Account</span>
-              <ArrowRight className="w-4 h-4" />
+              {loading ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /><span>Creating Account...</span></>
+              ) : (
+                <><span>Create Account</span><ArrowRight className="w-4 h-4" /></>
+              )}
             </button>
           </div>
         </form>

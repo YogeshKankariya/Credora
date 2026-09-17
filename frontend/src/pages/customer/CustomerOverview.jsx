@@ -34,18 +34,18 @@ export const CustomerOverview = () => {
             CUSTOMER IDENTITY WALLET
           </span>
           <h2 className="text-2xl font-bold text-white mt-1">
-            Welcome back, {currentCustomer.name}
+            Welcome back, {currentCustomer?.name || 'Customer'}
           </h2>
           <p className="text-xs text-slate-400 mt-1 flex items-center gap-2">
             <span>DID:</span>
             <span className="font-mono text-slate-300 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
-              {currentCustomer.did}
+              {currentCustomer?.did || 'did:customer:demo'}
             </span>
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          <StatusBadge status={currentCustomer.kycStatus} size="lg" />
+          <StatusBadge status={currentCustomer?.kycStatus || 'Verified'} size="lg" />
         </div>
       </div>
 
@@ -53,14 +53,14 @@ export const CustomerOverview = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Identity Status"
-          value={currentCustomer.identityStatus}
-          subtitle={`DID: ${currentCustomer.did.slice(0, 16)}...`}
+          value={currentCustomer?.identityStatus || 'Verified'}
+          subtitle={`DID: ${currentCustomer?.did ? currentCustomer.did.slice(0, 16) : 'did:customer'}...`}
           icon={Fingerprint}
           color="cyan"
         />
         <StatCard
           title="KYC Status"
-          value={currentCustomer.kycStatus}
+          value={currentCustomer?.kycStatus || 'Verified'}
           subtitle="Regulatory compliance met"
           icon={FileCheck}
           color="emerald"

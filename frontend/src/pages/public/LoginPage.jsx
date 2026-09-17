@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   ShieldCheck,
   User,
@@ -10,26 +10,51 @@ import {
   EyeOff,
   ArrowRight,
   Sparkles,
-  KeyRound
+  KeyRound,
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
+import { useKYC } from '../../context/KYCContext';
 
 export const LoginPage = () => {
+  const { loginUser } = useKYC();
+  const navigate = useNavigate();
+
   const [role, setRole] = useState('individual'); // 'individual' | 'bank'
   const [showPassword, setShowPassword] = useState(false);
-
-  // Form states (purely visual)
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [bankId, setBankId] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Visual UI only - no authentication logic or API calls
+    setError('');
+    setLoading(true);
+    try {
+      const credentials = role === 'individual'
+        ? { name: name.trim(), email, password }
+        : { bankId, password };
+      const user = await loginUser(credentials);
+      // Route based on role returned from backend
+      const roleStr = user.role.toLowerCase();
+      if (roleStr === 'customer') navigate('/customer');
+      else if (roleStr === 'issuer') navigate('/bank/issuer');
+      else if (roleStr === 'verifier') navigate('/bank/verifier');
+      else navigate('/');
+    } catch (err) {
+      setError(err?.message || 'Invalid credentials. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleRoleChange = (newRole) => {
     setRole(newRole);
     setPassword('');
+    setError('');
   };
 
   const isIndividual = role === 'individual';
@@ -96,30 +121,63 @@ export const LoginPage = () => {
 
         {/* Login Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          {isIndividual ? (
-            /* Individual: Email Field */
-            <div>
-              <label
-                htmlFor="individual-email"
-                className="block text-xs font-medium text-slate-300 mb-1.5"
-              >
-                Email
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
-                  <Mail className="w-4 h-4" />
-                </div>
-                <input
-                  id="individual-email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email"
-                  className="w-full bg-slate-950/90 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-all"
-                  autoComplete="email"
-                />
-              </div>
+          {/* Error Banner */}
+          {error && (
+            <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{error}</span>
             </div>
+          )}
+          {isIndividual ? (
+            <>
+              {/* Individual: Full Name Field */}
+              <div>
+                <label
+                  htmlFor="individual-name"
+                  className="block text-xs font-medium text-slate-300 mb-1.5"
+                >
+                  Full Name
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                    <User className="w-4 h-4" />
+                  </div>
+                  <input
+                    id="individual-name"
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Enter your name (e.g. Khushi)"
+                    className="w-full bg-slate-950/90 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-all"
+                    autoComplete="name"
+                  />
+                </div>
+              </div>
+
+              {/* Individual: Email Field */}
+              <div>
+                <label
+                  htmlFor="individual-email"
+                  className="block text-xs font-medium text-slate-300 mb-1.5"
+                >
+                  Email
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                    <Mail className="w-4 h-4" />
+                  </div>
+                  <input
+                    id="individual-email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter your email"
+                    className="w-full bg-slate-950/90 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-all"
+                    autoComplete="email"
+                  />
+                </div>
+              </div>
+            </>
           ) : (
             /* Bank: Bank ID Field */
             <div>
@@ -192,14 +250,18 @@ export const LoginPage = () => {
           <div className="pt-2">
             <button
               type="submit"
-              className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs sm:text-sm font-semibold text-white shadow-lg transition-all duration-200 cursor-pointer ${
+              disabled={loading}
+              className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs sm:text-sm font-semibold text-white shadow-lg transition-all duration-200 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${
                 isIndividual
                   ? 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 shadow-cyan-950/50 hover:shadow-cyan-500/20'
                   : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-blue-950/50 hover:shadow-blue-500/20'
               }`}
             >
-              <span>Login</span>
-              <ArrowRight className="w-4 h-4" />
+              {loading ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /><span>Signing in...</span></>
+              ) : (
+                <><span>Login</span><ArrowRight className="w-4 h-4" /></>
+              )}
             </button>
           </div>
         </form>

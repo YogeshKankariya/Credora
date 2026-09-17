@@ -288,9 +288,14 @@ if (authRes.data?.token) {
   // Active helpers
   const currentCustomer = users.find((u) => u.id === activeCustomerId) || users[0] || {};
   const currentBank = banks.find((b) => b.id === activeBankId || b.code === activeBankId) || banks[0] || {};
-  const customerCredential = credentials.find(
+  const baseCredential = credentials.find(
     (c) => c.customerId === currentCustomer.id || c.customerId === currentCustomer.dbId
   ) || credentials[0];
+
+  const customerCredential = baseCredential ? {
+    ...baseCredential,
+    subject: currentCustomer.name || baseCredential.subject,
+  } : null;
 
   // Approve Customer KYC
   const approveCustomerKYC = async (customerId) => {
@@ -581,6 +586,118 @@ if (authRes.data?.token) {
     addToast('Environment synchronized with PostgreSQL database.', 'info');
   };
 
+  const registerCustomer = async (userData) => {
+    try {
+      const res = await api.post('/auth/register', {
+        ...userData,
+        role: 'CUSTOMER',
+      });
+      if (res.data?.token) {
+        setToken(res.data.token);
+        // The registration response returns a flat user object {id, name, email, role, createdAt}
+        // without nested profile data, so we build the customer object directly
+        const backendUser = res.data.user;
+        const customerName = userData.name?.trim() || backendUser.name || 'Customer';
+        const newCustomer = {
+          id: backendUser.id,
+          dbId: backendUser.id,
+          name: customerName,
+          email: backendUser.email || userData.email,
+          did: backendUser.did || `did:customer:${backendUser.id.slice(0, 8)}`,
+          publicKey: '',
+          identityCreated: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+          keyStatus: 'Hardware Enclave Secured',
+          identityStatus: 'Verified',
+          kycStatus: 'Verified',
+          currentCredentialId: 'KYC-DEMO-001',
+          dob: '15/05/1992',
+          address: '402 Skyline Boulevard, Demo Tech Park, Bangalore 560103',
+          documentType: 'National ID (PAN)',
+          documentNumber: 'ABCDE1234F',
+          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        };
+        setUsers(prev => [newCustomer, ...prev]);
+        setActiveCustomerId(newCustomer.id);
+        setCurrentRole('customer');
+        addToast('Registration successful!', 'success');
+        return backendUser;
+      }
+    } catch (err) {
+      addToast(err?.message || 'Registration failed', 'error');
+      throw err;
+    }
+  };
+
+  const loginUser = async (credentials) => {
+    try {
+      const res = await api.post('/auth/login', credentials);
+      if (res.data?.token) {
+        setToken(res.data.token);
+        const backendUser = res.data.user;
+        const roleStr = backendUser.role.toLowerCase();
+        setCurrentRole(roleStr);
+        if (roleStr === 'customer') {
+          const customerName = credentials.name?.trim() || backendUser.name || 'Khushi';
+          setUsers(prev => {
+            const index = prev.findIndex(u => u.id === backendUser.id || u.email === backendUser.email);
+            if (index >= 0) {
+              const updated = [...prev];
+              updated[index] = {
+                ...updated[index],
+                ...backendUser,
+                name: customerName,
+              };
+              return updated;
+            }
+            const newCustomer = {
+              id: backendUser.id,
+              dbId: backendUser.id,
+              name: customerName,
+              email: backendUser.email,
+              did: backendUser.did || `did:customer:${backendUser.id.slice(0, 8)}`,
+              publicKey: '',
+              identityCreated: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+              keyStatus: 'Hardware Enclave Secured',
+              identityStatus: 'Verified',
+              kycStatus: 'Verified',
+              currentCredentialId: 'KYC-DEMO-001',
+              dob: '15/05/1992',
+              address: '402 Skyline Boulevard, Demo Tech Park, Bangalore 560103',
+              documentType: 'National ID (PAN)',
+              documentNumber: 'ABCDE1234F',
+              avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+            };
+            return [newCustomer, ...prev];
+          });
+          setActiveCustomerId(backendUser.id);
+        } else {
+          // For bank login: prefer the bankId from credentials, otherwise
+          // fetch the institution profile to resolve the actual institution code
+          if (credentials.bankId) {
+            setActiveBankId(credentials.bankId);
+          } else {
+            // Email-based bank login — fetch the profile to get institution code
+            try {
+              const meRes = await api.get('/auth/me');
+              const profile = meRes.data?.institutionProfile;
+              if (profile?.institutionCode) {
+                setActiveBankId(profile.institutionCode);
+              }
+            } catch {
+              // Fallback: the loadBackendData call below will populate banks
+            }
+          }
+        }
+        await loadBackendData(roleStr);
+        addToast('Login successful!', 'success');
+        return backendUser;
+      }
+    } catch (err) {
+      addToast(err?.message || 'Login failed', 'error');
+      throw err;
+    }
+  };
+
   return (
     <KYCContext.Provider
       value={{
@@ -603,6 +720,8 @@ if (authRes.data?.token) {
         revokeCredential,
         verifyCredentialRecord,
         resetDemoData,
+        registerCustomer,
+        loginUser,
         toasts,
         addToast,
         removeToast,

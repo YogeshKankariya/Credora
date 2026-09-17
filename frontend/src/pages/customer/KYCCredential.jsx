@@ -123,9 +123,9 @@ export const KYCCredential = () => {
           </div>
 
           <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80">
-            <span className="text-xs text-slate-400 block">Subject</span>
+            <span className="text-xs text-slate-400 block">Customer Name</span>
             <span className="text-base font-bold text-white mt-1 block">
-              {customerCredential.subject}
+              {currentCustomer?.name || customerCredential.subject}
             </span>
           </div>
 

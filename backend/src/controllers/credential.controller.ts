@@ -65,7 +65,16 @@ export async function getCredentials(_req: Request, res: Response): Promise<void
       },
       orderBy: { issuedAt: "desc" },
     });
-    sendSuccess(res, credentials);
+
+    // BigInt (blockNumber) cannot be JSON-serialized — convert to string
+    const safe = credentials.map((c) => ({
+      ...c,
+      blockchainRecord: c.blockchainRecord
+        ? { ...c.blockchainRecord, blockNumber: c.blockchainRecord.blockNumber?.toString() ?? null }
+        : null,
+    }));
+
+    sendSuccess(res, safe);
   } catch (err) {
     console.error("[credential.getAll]", err);
     sendServerError(res);
