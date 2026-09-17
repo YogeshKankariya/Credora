@@ -1,0 +1,260 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  CUSTOMER
+  ISSUER
+  VERIFIER
+  ADMIN
+}
+
+enum CredentialStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+  SUSPENDED
+}
+
+enum InstitutionRole {
+  ISSUER
+  VERIFIER
+  BOTH
+}
+
+enum KycStatus {
+  PENDING
+  UNDER_REVIEW
+  VERIFIED
+  REJECTED
+}
+
+enum IdentityStatus {
+  CREATED
+  VERIFIED
+  SUSPENDED
+}
+
+enum KeyStatus {
+  ACTIVE
+  ROTATED
+  REVOKED
+}
+
+enum InstitutionStatus {
+  ACTIVE
+  SUSPENDED
+  INACTIVE
+}
+
+// ─── Model: User ─────────────────────────────────────────────────────────────
+// Core authentication table. Every actor (customer, issuer, verifier, admin)
+// has exactly one User record.
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         UserRole
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  customerProfile   CustomerProfile?
+  institutionProfile InstitutionProfile?
+  verificationLogs  VerificationLog[]
+  revocations       Revocation[]       @relation("RevokedBy")
+
+  @@map("users")
+}
+
+// ─── Model: CustomerProfile ──────────────────────────────────────────────────
+// Stores KYC identity data for each customer user.
+// DID (Decentralized Identifier) and public key are generated on registration.
+// Document number is stored as a hash — never as plain text.
+
+model CustomerProfile {
+  id                 String         @id @default(uuid())
+  userId             String         @unique
+  user               User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  did                String         @unique
+  publicKey          String
+  dateOfBirth        DateTime?
+  address            String?
+  documentType       String?
+  documentNumberHash String?        // SHA-256 of the actual document number
+
+  identityStatus     IdentityStatus @default(CREATED)
+  kycStatus          KycStatus      @default(PENDING)
+  keyStatus          KeyStatus      @default(ACTIVE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  credentials Credential[]
+
+  @@map("customer_profiles")
+}
+
+// ─── Model: InstitutionProfile ───────────────────────────────────────────────
+// Stores bank/financial institution data.
+// An institution can be an issuer, verifier, or both.
+// Has its own DID and cryptographic key pair used for signing credentials.
+
+model InstitutionProfile {
+  id              String            @id @default(uuid())
+  userId          String            @unique
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name            String
+  shortName       String
+  institutionCode String            @unique
+  did             String            @unique
+  publicKey       String
+  role            InstitutionRole   @default(ISSUER)
+  status          InstitutionStatus @default(ACTIVE)
+  accreditedDate  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  issuedCredentials Credential[] @relation("IssuedBy")
+
+  @@map("institution_profiles")
+}
+
+// ─── Model: Credential ───────────────────────────────────────────────────────
+// Core table. Each issued KYC credential has:
+//   - A human-readable credentialId (e.g. KYC-2026-000184)
+//   - A SHA-256 hash of the canonical credential payload
+//   - A digital signature (ECDSA) made with the issuer's private key
+//   - Links to the customer (subject) and institution (issuer)
+
+model Credential {
+  id               String           @id @default(uuid())
+  credentialId     String           @unique   // e.g. KYC-2026-000184
+  customerId       String
+  customer         CustomerProfile  @relation(fields: [customerId], references: [id])
+  issuerId         String
+  issuer           InstitutionProfile @relation("IssuedBy", fields: [issuerId], references: [id])
+
+  subjectDid       String
+  issuerDid        String
+  credentialType   String           @default("KYC Verification")
+  assuranceLevel   String           @default("Tier-1 High Assurance")
+
+  // Cryptographic fields
+  credentialHash   String           // SHA-256 of canonical payload
+  signature        String           // ECDSA signature by issuer
+  signatureAlgorithm String         @default("ES256K")
+  publicKey        String           // Snapshot of issuer public key at time of issuance
+
+  // Lifecycle
+  status           CredentialStatus @default(ACTIVE)
+  issuedAt         DateTime         @default(now())
+  expiresAt        DateTime
+  verificationCount Int             @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  blockchainRecord BlockchainRecord?
+  revocation       Revocation?
+  verificationLogs VerificationLog[]
+
+  @@map("credentials")
+}
+
+// ─── Model: BlockchainRecord ─────────────────────────────────────────────────
+// Stores the on-chain proof for each credential.
+// The credential hash is registered on the smart contract.
+// When the transaction is mined, we store the tx hash and block number.
+
+model BlockchainRecord {
+  id                  String  @id @default(uuid())
+  credentialId        String  @unique
+  credential          Credential @relation(fields: [credentialId], references: [id], onDelete: Cascade)
+
+  credentialHash      String
+  transactionHash     String?
+  blockNumber         BigInt?
+  contractAddress     String?
+  network             String  @default("localhost")
+  registrationStatus  String  @default("PENDING") // PENDING | CONFIRMED | FAILED
+
+  registeredAt DateTime @default(now())
+
+  @@map("blockchain_records")
+}
+
+// ─── Model: Revocation ───────────────────────────────────────────────────────
+// Created when an issuer revokes a credential.
+// The credential.status is also set to REVOKED.
+// Once blockchain is integrated, the blockchainTxHash will hold the on-chain proof.
+
+model Revocation {
+  id               String     @id @default(uuid())
+  credentialId     String     @unique
+  credential       Credential @relation(fields: [credentialId], references: [id], onDelete: Cascade)
+
+  revokedById      String
+  revokedBy        User       @relation("RevokedBy", fields: [revokedById], references: [id])
+
+  reason           String
+  blockchainTxHash String?    // Filled when blockchain revoke tx is confirmed
+
+  revokedAt DateTime @default(now())
+
+  @@map("revocations")
+}
+
+// ─── Model: VerificationLog ──────────────────────────────────────────────────
+// Every verification attempt is recorded here.
+// The six boolean fields map to the six-point check in your frontend:
+//   1. structureCheck    — credential payload is well-formed
+//   2. issuerCheck       — issuer is in trusted issuers list
+//   3. signatureCheck    — ECDSA signature is valid
+//   4. hashIntegrityCheck — recomputed hash matches stored hash
+//   5. blockchainCheck   — hash exists on blockchain
+//   6. statusActiveCheck — credential is not revoked/expired
+
+model VerificationLog {
+  id           String  @id @default(uuid())
+  credentialId String
+  credential   Credential @relation(fields: [credentialId], references: [id])
+
+  verifierId   String
+  verifier     User    @relation(fields: [verifierId], references: [id])
+
+  purpose      String
+  result       String  // PASS | FAIL
+  status       String  // SUCCESS | FAILED | ERROR
+
+  // Six-point audit checks
+  structureCheck     Boolean @default(false)
+  issuerCheck        Boolean @default(false)
+  signatureCheck     Boolean @default(false)
+  hashIntegrityCheck Boolean @default(false)
+  blockchainCheck    Boolean @default(false)
+  statusActiveCheck  Boolean @default(false)
+
+  verifiedAt DateTime @default(now())
+
+  @@map("verification_logs")
+}
