@@ -100,10 +100,10 @@ function formatCredential(c) {
     shortHash: c.credentialHash ? `${c.credentialHash.slice(0, 8)}...${c.credentialHash.slice(-6)}` : '',
     signature: c.signature,
     signatureAlgorithm: 'ECDSA (secp256k1) + SHA-256',
-    blockchainRegistration: c.blockchainRecord?.registrationStatus === 'CONFIRMED' ? 'Confirmed' : 'Confirmed',
+    blockchainRegistration: c.blockchainRecord?.registrationStatus === 'CONFIRMED' ? 'Confirmed' : (c.blockchainRecord?.registrationStatus || 'Pending'),
     blockchainTxHash:
-      c.blockchainRecord?.transactionHash || '0x7f92a8c1e92d8471bb90a42f8e48f029a738c821bd82e91a5f4e19028cb48291',
-    blockNumber: c.blockchainRecord?.blockNumber ? Number(c.blockchainRecord.blockNumber) : 4829100,
+      c.blockchainRecord?.transactionHash || c.blockchainTxHash || null,
+    blockNumber: c.blockchainRecord?.blockNumber ? Number(c.blockchainRecord.blockNumber) : null,
     revocationReason: c.revocation?.reason || null,
     revokedAt: c.revocation?.revokedAt
       ? new Date(c.revocation.revokedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -299,53 +299,83 @@ if (authRes.data?.token) {
 
   // Approve Customer KYC
   const approveCustomerKYC = async (customerId) => {
+    const customer = users.find((u) => u.id === customerId || u.dbId === customerId);
+    const targetCustomerId = customer?.dbId || customer?.id || customerId;
+
     try {
-      await api.post(`/kyc/${customerId}/review`, { status: 'VERIFIED' });
-    } catch {
-      // Optimistic update
+      const authRes = await api.post('/auth/login', ROLE_ACCOUNTS.issuer);
+      if (authRes.data?.token) setToken(authRes.data.token);
+
+      await api.post(`/kyc/${targetCustomerId}/approve`);
+
+      setUsers((prev) =>
+        prev.map((u) => {
+          if (u.id === customerId || u.dbId === targetCustomerId) {
+            return {
+              ...u,
+              kycStatus: 'Verified',
+              identityStatus: 'Verified',
+              keyStatus: 'Hardware Enclave Secured',
+            };
+          }
+          return u;
+        })
+      );
+      addToast('KYC Verification Successful. Customer marked as Verified.', 'success');
+      return true;
+    } catch (err) {
+      console.error('[KYCContext.approveCustomerKYC]', err);
+      addToast(`KYC Approval failed: ${err.message}`, 'error');
+      return false;
     }
-    setUsers((prev) =>
-      prev.map((u) => {
-        if (u.id === customerId) {
-          return {
-            ...u,
-            kycStatus: 'Verified',
-            identityStatus: 'Verified',
-            keyStatus: 'Hardware Enclave Secured',
-          };
-        }
-        return u;
-      })
-    );
-    addToast('KYC Verification Successful. Customer marked as Verified.', 'success');
   };
 
   // Reject Customer KYC
   const rejectCustomerKYC = async (customerId, reason = 'Document clarification required') => {
+    const customer = users.find((u) => u.id === customerId || u.dbId === customerId);
+    const targetCustomerId = customer?.dbId || customer?.id || customerId;
+
     try {
-      await api.post(`/kyc/${customerId}/review`, { status: 'REJECTED', notes: reason });
-    } catch {
-      // Optimistic update
+      const authRes = await api.post('/auth/login', ROLE_ACCOUNTS.issuer);
+      if (authRes.data?.token) setToken(authRes.data.token);
+
+      await api.post(`/kyc/${targetCustomerId}/reject`, { reason });
+
+      setUsers((prev) =>
+        prev.map((u) => {
+          if (u.id === customerId || u.dbId === targetCustomerId) {
+            return {
+              ...u,
+              kycStatus: 'Rejected',
+              identityStatus: 'Action Required',
+            };
+          }
+          return u;
+        })
+      );
+      addToast(`Customer KYC rejected: ${reason}`, 'error');
+      return true;
+    } catch (err) {
+      console.error('[KYCContext.rejectCustomerKYC]', err);
+      addToast(`KYC Rejection failed: ${err.message}`, 'error');
+      return false;
     }
-    setUsers((prev) =>
-      prev.map((u) => {
-        if (u.id === customerId) {
-          return {
-            ...u,
-            kycStatus: 'Rejected',
-            identityStatus: 'Action Required',
-          };
-        }
-        return u;
-      })
-    );
-    addToast(`Customer KYC rejected: ${reason}`, 'error');
   };
 
   // Issue Credential (via Backend Cryptographic Service)
   const issueCredential = async (customerId, issuingBank = 'Demo National Bank') => {
-    const customer = users.find((u) => u.id === customerId);
-    if (!customer) return null;
+    const customer = users.find((u) => u.id === customerId || u.dbId === customerId);
+    if (!customer) {
+      addToast('Customer profile not found.', 'error');
+      return null;
+    }
+
+    const targetCustomerUuid = customer.dbId || customer.id;
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetCustomerUuid);
+    if (!isUuid) {
+      addToast('Cannot issue credential: valid database customer UUID required.', 'error');
+      return null;
+    }
 
     try {
       // Ensure issuer role token
@@ -353,13 +383,17 @@ if (authRes.data?.token) {
       if (authRes.data?.token) setToken(authRes.data.token);
 
       const res = await api.post('/credentials', {
-        customerId: customer.dbId || customer.id,
+        customerId: targetCustomerUuid,
         credentialType: 'KYC Verification',
         assuranceLevel: 'Tier-1 High Assurance',
         expiresInDays: 365,
       });
 
       const backendCred = res.data;
+      if (!backendCred) {
+        throw new Error('No credential data received from backend');
+      }
+
       const newCred = formatCredential({
         ...backendCred,
         customer: { user: { name: customer.name } },
@@ -369,7 +403,11 @@ if (authRes.data?.token) {
       setCredentials((prev) => [newCred, ...prev]);
 
       setUsers((prev) =>
-        prev.map((u) => (u.id === customerId ? { ...u, currentCredentialId: newCred.id, kycStatus: 'Verified' } : u))
+        prev.map((u) =>
+          u.id === customer.id || u.dbId === targetCustomerUuid
+            ? { ...u, currentCredentialId: newCred.id, kycStatus: 'Verified' }
+            : u
+        )
       );
 
       const historyEntry = {

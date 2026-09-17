@@ -37,20 +37,34 @@ export const IssueCredential = () => {
   const [activeStepIndex, setActiveStepIndex] = useState(-1);
   const [issuedCred, setIssuedCred] = useState(null);
 
-  const handleStartIssuance = () => {
-    setIsProcessing(true);
-    setActiveStepIndex(0);
+  const handleStartIssuance = async () => {
+    if (!customer) return;
 
-    // Sequence through steps
-    setTimeout(() => setActiveStepIndex(1), 700);
-    setTimeout(() => setActiveStepIndex(2), 1400);
-    setTimeout(() => setActiveStepIndex(3), 2100);
-    setTimeout(() => {
-      setActiveStepIndex(4);
-      const newCred = issueCredential(customer.id, currentBank.name);
-      setIssuedCred(newCred);
+    const customerUuid = customer.dbId || customer.id;
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(customerUuid);
+    if (!isUuid) {
+      return;
+    }
+
+    setIsProcessing(true);
+    setActiveStepIndex(1);
+
+    try {
+      const newCred = await issueCredential(customerUuid, currentBank?.name || 'Demo National Bank');
+      if (newCred) {
+        setIssuedCred(newCred);
+        setActiveStepIndex(ISSUANCE_STEPS.length - 1);
+      } else {
+        setIssuedCred(null);
+        setActiveStepIndex(-1);
+      }
+    } catch (err) {
+      console.error('[IssueCredential.handleStartIssuance]', err);
+      setIssuedCred(null);
+      setActiveStepIndex(-1);
+    } finally {
       setIsProcessing(false);
-    }, 2800);
+    }
   };
 
   const currentDate = new Date().toLocaleDateString('en-GB', {
@@ -180,17 +194,23 @@ export const IssueCredential = () => {
                 <span>Digitally Signed with Bank Private Key</span>
               </p>
               <p className="flex items-center gap-2">
-                <span className="text-emerald-400">✓</span>
-                <span>Blockchain Reference Registered (Tx Hash: {issuedCred.blockchainTxHash.slice(0, 18)}...)</span>
+                <span className={issuedCred.blockchainTxHash ? "text-emerald-400" : "text-amber-400"}>
+                  {issuedCred.blockchainTxHash ? "✓" : "•"}
+                </span>
+                <span>
+                  {issuedCred.blockchainTxHash
+                    ? `Blockchain Reference Registered (Tx Hash: ${issuedCred.blockchainTxHash.slice(0, 18)}...)`
+                    : 'Blockchain Reference: Transaction reference unavailable'}
+                </span>
               </p>
             </div>
 
             <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between">
               <div>
                 <span className="text-[10px] uppercase text-slate-500 font-semibold block">Credential ID</span>
-                <span className="text-sm font-mono text-cyan-300 font-bold">{issuedCred.id}</span>
+                <span className="text-sm font-mono text-cyan-300 font-bold">{issuedCred.id || 'N/A'}</span>
               </div>
-              <StatusBadge status="ACTIVE" />
+              <StatusBadge status={issuedCred.status || 'ACTIVE'} />
             </div>
 
             <div className="flex gap-3 pt-2">

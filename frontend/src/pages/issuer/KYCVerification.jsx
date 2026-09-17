@@ -32,14 +32,18 @@ export const KYCVerification = () => {
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('Identity document image clarity issue');
 
-  const handleApprove = () => {
-    approveCustomerKYC(customer.id);
-    setIsApproveModalOpen(true);
+  const handleApprove = async () => {
+    const ok = await approveCustomerKYC(customer.id);
+    if (ok) {
+      setIsApproveModalOpen(true);
+    }
   };
 
-  const handleReject = () => {
-    rejectCustomerKYC(customer.id, rejectReason);
-    setIsRejectModalOpen(false);
+  const handleReject = async () => {
+    const ok = await rejectCustomerKYC(customer.id, rejectReason);
+    if (ok) {
+      setIsRejectModalOpen(false);
+    }
   };
 
   const handleProceedToIssue = () => {
