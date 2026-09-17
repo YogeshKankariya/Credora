@@ -37,7 +37,11 @@ export async function verifyCredential(req: Request, res: Response): Promise<voi
 // GET /api/verification/history
 export async function getVerificationHistory(req: Request, res: Response): Promise<void> {
   try {
+    const verifierId = req.user?.userId;
+    if (!verifierId) { sendError(res, "Not authenticated", 401); return; }
+
     const logs = await prisma.verificationLog.findMany({
+      where: { verifierId },
       include: {
         credential: { select: { credentialId: true, credentialType: true } },
         verifier: { select: { name: true } },
@@ -55,6 +59,9 @@ export async function getVerificationHistory(req: Request, res: Response): Promi
 // GET /api/verification/:id
 export async function getVerificationById(req: Request, res: Response): Promise<void> {
   try {
+    const verifierId = req.user?.userId;
+    if (!verifierId) { sendError(res, "Not authenticated", 401); return; }
+
     const id = param(req, "id");
     const log = await prisma.verificationLog.findUnique({
       where: { id },
@@ -69,7 +76,7 @@ export async function getVerificationById(req: Request, res: Response): Promise<
       },
     });
 
-    if (!log) { sendError(res, "Verification record not found", 404); return; }
+    if (!log || log.verifierId !== verifierId) { sendError(res, "Verification record not found", 404); return; }
     sendSuccess(res, log);
   } catch (err) {
     console.error("[verification.getById]", err);
