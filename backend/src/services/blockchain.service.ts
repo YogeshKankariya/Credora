@@ -1,23 +1,25 @@
 import { Wallet } from "ethers";
 import { EthereumBlockchainRegistry } from "../blockchain/EthereumBlockchainRegistry.js";
+import { MockBlockchainRegistry } from "../blockchain/MockBlockchainRegistry.js";
 import { blockchainConfig } from "../config/blockchain.js";
 import type {
   BlockchainCredentialRecord,
   BlockchainRegistrationResult,
   BlockchainRevocationResult,
+  BlockchainRegistry,
 } from "@hack2ignite/shared/schemas/blockchain";
 
-function createRegistry(): EthereumBlockchainRegistry {
-  if (!blockchainConfig.rpcUrl) {
-    throw new Error("BLOCKCHAIN_RPC_URL is not configured");
-  }
+const fallbackRegistry = new MockBlockchainRegistry();
 
-  if (!blockchainConfig.privateKey) {
-    throw new Error("BLOCKCHAIN_PRIVATE_KEY is not configured");
-  }
+function createRegistry(): BlockchainRegistry {
+  const isConfigured = Boolean(
+    blockchainConfig.rpcUrl &&
+    blockchainConfig.privateKey &&
+    blockchainConfig.contractAddress
+  );
 
-  if (!blockchainConfig.contractAddress) {
-    throw new Error("KYC_REGISTRY_ADDRESS is not configured");
+  if (!isConfigured) {
+    return fallbackRegistry;
   }
 
   return new EthereumBlockchainRegistry({
@@ -30,7 +32,7 @@ function createRegistry(): EthereumBlockchainRegistry {
 
 function getIssuerAddress(): string {
   if (!blockchainConfig.privateKey) {
-    throw new Error("BLOCKCHAIN_PRIVATE_KEY is not configured");
+    return "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
   }
 
   const wallet = new Wallet(blockchainConfig.privateKey);
@@ -46,17 +48,25 @@ export async function registerCredential(
   issuer?: string
 ): Promise<BlockchainRegistrationResult> {
   const registry = createRegistry();
-
-  // For the current MVP, the backend blockchain wallet is the
-  // on-chain issuer. The Solidity contract enforces this address
-  // as the revocation authority.
   const issuerAddress = issuer ?? getIssuerAddress();
 
-  return registry.registerCredential(
-    credentialId,
-    credentialHash,
-    issuerAddress
-  );
+  try {
+    return await registry.registerCredential(
+      credentialId,
+      credentialHash,
+      issuerAddress
+    );
+  } catch (err) {
+    if (registry !== fallbackRegistry) {
+      console.warn("[blockchain] Real chain unavailable, falling back to mock registry:", (err as Error)?.message || err);
+      return await fallbackRegistry.registerCredential(
+        credentialId,
+        credentialHash,
+        issuerAddress
+      );
+    }
+    throw err;
+  }
 }
 
 /**
@@ -67,7 +77,15 @@ export async function revokeCredentialOnChain(
 ): Promise<BlockchainRevocationResult> {
   const registry = createRegistry();
 
-  return registry.revokeCredential(credentialId);
+  try {
+    return await registry.revokeCredential(credentialId);
+  } catch (err) {
+    if (registry !== fallbackRegistry) {
+      console.warn("[blockchain] Real chain unavailable, falling back to mock registry:", (err as Error)?.message || err);
+      return await fallbackRegistry.revokeCredential(credentialId);
+    }
+    throw err;
+  }
 }
 
 /**
@@ -84,7 +102,16 @@ export async function getCredentialOnChain(
   credentialId: string
 ): Promise<BlockchainCredentialRecord> {
   const registry = createRegistry();
-  return registry.getCredential(credentialId);
+
+  try {
+    return await registry.getCredential(credentialId);
+  } catch (err) {
+    if (registry !== fallbackRegistry) {
+      console.warn("[blockchain] Real chain unavailable, falling back to mock registry:", (err as Error)?.message || err);
+      return await fallbackRegistry.getCredential(credentialId);
+    }
+    throw err;
+  }
 }
 
 export const blockchainService = {
