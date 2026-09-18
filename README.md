@@ -59,6 +59,38 @@ Credora establishes a shared trust circle among institutions using public-key cr
 
 ---
 
+## 📸 Prototype Screenshots
+
+### 1. Landing Page & Lifecycle Overview
+![Landing Page](docs/screenshots/01-landing-page.png)
+*Credora landing page highlighting the "Verify once. Trust many times." value proposition and the verifiable banking credential lifecycle.*
+
+### 2. Customer Identity Wallet & Dashboard
+![Customer Dashboard](docs/screenshots/02-customer-dashboard.png)
+*Customer portal showing identity verification status, decentralized identifier (DID), active KYC credential, and issuing bank details.*
+
+### 3. Verifiable KYC Credential Details
+![Credential Details](docs/screenshots/03-credential-details.png)
+*Cryptographically signed verifiable credential displaying the SHA-256 payload hash, ECDSA secp256k1 digital signature, and blockchain anchor status.*
+
+### 4. Bank A (Issuer) — Pending KYC Review Queue
+![Bank A Pending KYC](docs/screenshots/04-bank-a-pending-kyc.png)
+*Bank A compliance officer dashboard reviewing synthetic customer profile details and document OCR verification before approval.*
+
+### 5. Bank A (Issuer) — Issued Credential & Registry Anchor
+![Bank A Issued Credential](docs/screenshots/05-bank-a-issued-credential.png)
+*Bank A interface confirming successful credential minting, status activation, and registry anchoring on the smart contract.*
+
+### 6. Bank B (Verifier) — Independent 6-Point Verification (Pass)
+![Bank B Verification Pass](docs/screenshots/06-bank-b-verification-pass.png)
+*Bank B verifier portal demonstrating successful execution of all six cryptographic audit checks without querying Bank A's private database.*
+
+### 7. Tamper Detection & Integrity Failure Demo
+![Tampering Detection](docs/screenshots/07-tampering-detection.png)
+*Demonstration of instant cryptographic tamper detection: altering customer data causes the recomputed SHA-256 hash to diverge and signature verification to fail immediately.*
+
+---
+
 ## 5. System Architecture
 
 ```mermaid
@@ -414,7 +446,7 @@ Developed by **Team 404NotFound** for **Hack2Ignite 2026** at **G H Raisoni Inte
 ## 16. Demo Links & Video
 
 - **Live Demonstration:** *[To be updated upon deployment]*
-- **Video Walkthrough:** *[To be updated upon recording]*
+- **Video Walkthrough:** [Watch Credora Video Walkthrough](https://youtu.be/I_iYFgWi7D4)
 - **Project Repository:** [https://github.com/YogeshKankariya/Credora](https://github.com/YogeshKankariya/Credora)
 
 ---
