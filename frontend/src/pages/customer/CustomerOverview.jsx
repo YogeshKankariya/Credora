@@ -14,7 +14,6 @@ import {
   Calendar,
   Layers,
   Key,
-  Hash,
   AlertCircle,
   Lock,
   Wallet
@@ -154,14 +153,6 @@ export const CustomerOverview = () => {
               <span className="text-sm font-semibold text-slate-200 mt-1 flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-slate-400" />
                 <span>{customerCredential.expiryDate}</span>
-              </span>
-            </div>
-
-            <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80">
-              <span className="text-xs font-medium text-slate-400 block">Payload Hash</span>
-              <span className="text-sm font-mono text-slate-400 mt-1 flex items-center gap-2">
-                <Hash className="w-4 h-4 text-cyan-400" />
-                <span>{customerCredential.shortHash}</span>
               </span>
             </div>
           </div>

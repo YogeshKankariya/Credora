@@ -5,7 +5,6 @@ import {
   Award,
   ShieldCheck,
   Key,
-  Hash,
   Database,
   Clock,
   Share2,
@@ -165,8 +164,9 @@ export const KYCCredential = () => {
               <Key className="w-4 h-4 text-cyan-400" />
               <span>Cryptographic Proof</span>
             </h4>
-            <span className="text-xs font-mono text-slate-400">
-              Payload Hash: <span className="text-cyan-300 font-semibold">{customerCredential.shortHash}</span>
+            <span className="text-xs font-mono text-slate-500 flex items-center gap-1.5">
+              <Lock className="w-3 h-3 text-slate-600" />
+              <span>Hash visible in Wallet only</span>
             </span>
           </div>
 
