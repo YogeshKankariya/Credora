@@ -135,18 +135,34 @@ export async function login(req: Request, res: Response): Promise<void> {
 
     let user;
     if (bankId) {
-      // Look up bank by institution code
-      const bank = await prisma.institutionProfile.findUnique({
-        where: { institutionCode: bankId },
+      // Look up bank by institution code OR by user email
+      const bank = await prisma.institutionProfile.findFirst({
+        where: {
+          OR: [
+            { institutionCode: { equals: bankId, mode: "insensitive" } },
+            { user: { email: { equals: bankId, mode: "insensitive" } } },
+          ],
+        },
         include: { user: true },
       });
-      if (!bank || !bank.user) {
-        sendError(res, "Invalid Bank ID or password", 401);
-        return;
+      if (bank?.user) {
+        user = bank.user;
+      } else {
+        // Fallback: check if a user exists with this email directly
+        const fallbackUser = await prisma.user.findFirst({
+          where: { email: { equals: bankId, mode: "insensitive" } },
+        });
+        if (fallbackUser) {
+          user = fallbackUser;
+        } else {
+          sendError(res, "Invalid Bank ID or password", 401);
+          return;
+        }
       }
-      user = bank.user;
     } else if (email) {
-      user = await prisma.user.findUnique({ where: { email } });
+      user = await prisma.user.findFirst({
+        where: { email: { equals: email, mode: "insensitive" } },
+      });
     }
 
     if (!user) {

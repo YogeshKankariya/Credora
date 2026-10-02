@@ -65,6 +65,24 @@ export const LoginPage = () => {
     }
   };
 
+  const fillDemo = (demoType) => {
+    setError('');
+    if (demoType === 'customer') {
+      setRole('individual');
+      setName('Rahul Sharma');
+      setEmail('rahul.sharma@demo-identity.org');
+      setPassword('Password123!');
+    } else if (demoType === 'issuer') {
+      setRole('bank');
+      setBankId('DNB-IN-BB');
+      setPassword('Password123!');
+    } else if (demoType === 'verifier') {
+      setRole('bank');
+      setBankId('DCB-IN-02');
+      setPassword('Password123!');
+    }
+  };
+
   const handleRoleChange = (newRole) => {
     setRole(newRole);
     setPassword('');
@@ -298,6 +316,37 @@ export const LoginPage = () => {
               />
             </div>
           )}
+          {/* Quick Demo Credentials */}
+          <div className="pt-2">
+            <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80">
+              <span className="block text-[10px] font-mono uppercase tracking-wider text-slate-400 font-semibold mb-1.5 text-center">
+                Quick Demo Fill
+              </span>
+              <div className="grid grid-cols-3 gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => fillDemo('customer')}
+                  className="py-1.5 px-2 rounded-lg bg-slate-800/80 hover:bg-cyan-950/40 hover:text-cyan-300 hover:border-cyan-800/50 border border-transparent text-[11px] text-slate-300 font-medium transition-all"
+                >
+                  👤 Customer
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fillDemo('issuer')}
+                  className="py-1.5 px-2 rounded-lg bg-slate-800/80 hover:bg-blue-950/40 hover:text-blue-300 hover:border-blue-800/50 border border-transparent text-[11px] text-slate-300 font-medium transition-all"
+                >
+                  🏦 Bank A
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fillDemo('verifier')}
+                  className="py-1.5 px-2 rounded-lg bg-slate-800/80 hover:bg-indigo-950/40 hover:text-indigo-300 hover:border-indigo-800/50 border border-transparent text-[11px] text-slate-300 font-medium transition-all"
+                >
+                  🏛️ Bank B
+                </button>
+              </div>
+            </div>
+          </div>
         </form>
 
         {/* Individual: Register prompt */}
