@@ -15,9 +15,10 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { useKYC } from '../../context/KYCContext';
+import { GoogleSignInButton } from '../../components/common/GoogleSignInButton';
 
 export const LoginPage = () => {
-  const { loginUser } = useKYC();
+  const { loginUser, loginWithGoogle } = useKYC();
   const navigate = useNavigate();
 
   const [role, setRole] = useState('individual'); // 'individual' | 'bank'
@@ -46,6 +47,19 @@ export const LoginPage = () => {
       else navigate('/');
     } catch (err) {
       setError(err?.message || 'Invalid credentials. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSuccess = async (authData) => {
+    setError('');
+    setLoading(true);
+    try {
+      await loginWithGoogle(authData);
+      navigate('/customer');
+    } catch (err) {
+      setError(err?.message || 'Google sign-in failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -264,6 +278,26 @@ export const LoginPage = () => {
               )}
             </button>
           </div>
+
+          {/* Individual Section Only: Google Auth */}
+          {isIndividual && (
+            <div className="pt-2 space-y-3">
+              <div className="relative flex items-center justify-center my-2">
+                <div className="border-t border-slate-800/80 w-full" />
+                <span className="bg-slate-900/90 px-3 text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-slate-500 shrink-0">
+                  Or Continue With
+                </span>
+                <div className="border-t border-slate-800/80 w-full" />
+              </div>
+
+              <GoogleSignInButton
+                text="Sign in with Google"
+                onSuccess={handleGoogleSuccess}
+                onError={(msg) => setError(msg)}
+                disabled={loading}
+              />
+            </div>
+          )}
         </form>
 
         {/* Individual: Register prompt */}

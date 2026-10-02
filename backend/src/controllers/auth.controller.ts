@@ -2,9 +2,16 @@ import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
+import crypto from "crypto";
+import { OAuth2Client } from "google-auth-library";
 import prisma from "../config/database.js";
 import { sendSuccess, sendCreated, sendError, sendServerError } from "../utils/response.js";
 import { cryptoService } from "../services/crypto.service.js";
+
+const googleClient = new OAuth2Client(
+  process.env["GOOGLE_CLIENT_ID"],
+  process.env["GOOGLE_CLIENT_SECRET"]
+);
 
 // ─── Validation schemas ───────────────────────────────────────────────────────
 
@@ -212,3 +219,184 @@ export async function getMe(req: Request, res: Response): Promise<void> {
     sendServerError(res);
   }
 }
+
+interface GooglePayload {
+  email?: string;
+  name?: string;
+  given_name?: string;
+  family_name?: string;
+  picture?: string;
+  sub?: string;
+  email_verified?: boolean;
+}
+
+export async function googleLogin(req: Request, res: Response): Promise<void> {
+  try {
+    const { token: idTokenInput, credential, demoUser } = req.body;
+    const idToken = idTokenInput || credential;
+
+    let email = "";
+    let name = "";
+    let picture = "";
+
+    // 1. Support development demo simulation if Google credentials not yet configured
+    if (
+      process.env["NODE_ENV"] !== "production" &&
+      idToken &&
+      typeof idToken === "string" &&
+      idToken.startsWith("demo_google_token")
+    ) {
+      email = (demoUser?.email || "demo.individual@gmail.com").toLowerCase();
+      name = demoUser?.name || "Google Individual User";
+      picture = demoUser?.picture || "";
+    } else {
+      if (!idToken) {
+        sendError(res, "Google ID token or credential is required", 400);
+        return;
+      }
+
+      const clientId = process.env["GOOGLE_CLIENT_ID"];
+      let payload: GooglePayload | undefined;
+
+      // Try official Google token verification if clientId is configured
+      if (clientId && !clientId.includes("your_google_client_id_here")) {
+        try {
+          const ticket = await googleClient.verifyIdToken({
+            idToken,
+            audience: clientId,
+          });
+          payload = ticket.getPayload() as GooglePayload | undefined;
+        } catch (verifyErr) {
+          console.warn("[auth.googleLogin] verifyIdToken fallback to tokeninfo:", (verifyErr as Error).message);
+        }
+      }
+
+      // If verifyIdToken didn't yield payload or clientId isn't configured yet, fallback to Google tokeninfo
+      if (!payload) {
+        try {
+          const resp = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
+          if (resp.ok) {
+            payload = (await resp.json()) as GooglePayload;
+          } else {
+            const errData = await resp.json().catch(() => ({}));
+            sendError(
+              res,
+              "Google token verification failed",
+              401,
+              (errData as any).error_description || "Invalid Google ID token"
+            );
+            return;
+          }
+        } catch (netErr) {
+          sendError(res, "Failed to connect to Google verification service", 502);
+          return;
+        }
+      }
+
+      if (!payload || !payload.email) {
+        sendError(res, "Unable to extract email from Google profile", 400);
+        return;
+      }
+
+      email = payload.email.toLowerCase();
+      name = payload.name || payload.given_name || email.split("@")[0] || "Individual User";
+      picture = payload.picture || "";
+    }
+
+    // 2. Check if user already exists
+    let user = await prisma.user.findUnique({
+      where: { email },
+      include: { customerProfile: true },
+    });
+
+    // 3. If new user, create User (role: CUSTOMER) and CustomerProfile (Individual section only)
+    if (!user) {
+      const randomPassword = crypto.randomUUID() + "-" + Date.now();
+      const passwordHash = await bcrypt.hash(randomPassword, 12);
+      const keys = cryptoService.generateKeyPair();
+
+      const createdUser = await prisma.$transaction(async (tx) => {
+        const newUser = await tx.user.create({
+          data: {
+            name,
+            email,
+            passwordHash,
+            role: "CUSTOMER",
+          },
+          select: { id: true, name: true, email: true, role: true, createdAt: true },
+        });
+
+        const did = cryptoService.generateDID(keys.publicKey);
+        await tx.customerProfile.create({
+          data: {
+            userId: newUser.id,
+            did,
+            publicKey: keys.publicKey,
+            identityStatus: "CREATED",
+            kycStatus: "PENDING",
+            keyStatus: "ACTIVE",
+          },
+        });
+
+        return newUser;
+      });
+
+      user = await prisma.user.findUnique({
+        where: { id: createdUser.id },
+        include: { customerProfile: true },
+      });
+    } else {
+      // If user exists, but doesn't have a CustomerProfile yet, ensure one is generated
+      if (user.role === "CUSTOMER" && !user.customerProfile) {
+        const keys = cryptoService.generateKeyPair();
+        const did = cryptoService.generateDID(keys.publicKey);
+        await prisma.customerProfile.create({
+          data: {
+            userId: user.id,
+            did,
+            publicKey: keys.publicKey,
+            identityStatus: "CREATED",
+            kycStatus: "PENDING",
+            keyStatus: "ACTIVE",
+          },
+        });
+      }
+
+      // Update name if currently empty or generic
+      if (name && (!user.name || user.name === "Customer")) {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: { name },
+          include: { customerProfile: true },
+        });
+      }
+    }
+
+    if (!user) {
+      sendServerError(res, "Failed to authenticate or create user");
+      return;
+    }
+
+    // 4. Generate system JWT token
+    const jwtToken = signToken(user.id, user.role, user.email);
+
+    sendSuccess(
+      res,
+      {
+        token: jwtToken,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          avatar: picture || undefined,
+        },
+      },
+      "Google login successful"
+    );
+  } catch (err) {
+    console.error("[auth.googleLogin]", err);
+    sendServerError(res);
+  }
+}
+

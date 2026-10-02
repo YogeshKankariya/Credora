@@ -736,6 +736,63 @@ if (authRes.data?.token) {
     }
   };
 
+  const loginWithGoogle = async (googleAuthData) => {
+    try {
+      const payload = typeof googleAuthData === 'string'
+        ? { token: googleAuthData }
+        : googleAuthData;
+
+      const res = await api.post('/auth/google', payload);
+      if (res.data?.token) {
+        setToken(res.data.token);
+        const backendUser = res.data.user;
+        const roleStr = (backendUser.role || 'customer').toLowerCase();
+        setCurrentRole(roleStr);
+
+        const customerName = backendUser.name || 'Individual Customer';
+        setUsers((prev) => {
+          const index = prev.findIndex((u) => u.id === backendUser.id || u.email === backendUser.email);
+          if (index >= 0) {
+            const updated = [...prev];
+            updated[index] = {
+              ...updated[index],
+              ...backendUser,
+              name: customerName,
+              avatar: backendUser.avatar || updated[index].avatar,
+            };
+            return updated;
+          }
+          const newCustomer = {
+            id: backendUser.id,
+            dbId: backendUser.id,
+            name: customerName,
+            email: backendUser.email,
+            did: backendUser.did || `did:customer:${backendUser.id.slice(0, 8)}`,
+            publicKey: '',
+            identityCreated: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+            keyStatus: 'Hardware Enclave Secured',
+            identityStatus: 'Verified',
+            kycStatus: 'Verified',
+            currentCredentialId: 'KYC-DEMO-001',
+            dob: '15/05/1992',
+            address: '402 Skyline Boulevard, Demo Tech Park, Bangalore 560103',
+            documentType: 'National ID (PAN)',
+            documentNumber: 'ABCDE1234F',
+            avatar: backendUser.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+          };
+          return [newCustomer, ...prev];
+        });
+        setActiveCustomerId(backendUser.id);
+        await loadBackendData(roleStr);
+        addToast('Signed in with Google successfully!', 'success');
+        return backendUser;
+      }
+    } catch (err) {
+      addToast(err?.message || 'Google sign-in failed', 'error');
+      throw err;
+    }
+  };
+
   return (
     <KYCContext.Provider
       value={{
@@ -760,6 +817,7 @@ if (authRes.data?.token) {
         resetDemoData,
         registerCustomer,
         loginUser,
+        loginWithGoogle,
         toasts,
         addToast,
         removeToast,

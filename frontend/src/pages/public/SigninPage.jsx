@@ -14,9 +14,10 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { useKYC } from '../../context/KYCContext';
+import { GoogleSignInButton } from '../../components/common/GoogleSignInButton';
 
 export const SigninPage = () => {
-  const { registerCustomer } = useKYC();
+  const { registerCustomer, loginWithGoogle } = useKYC();
   const navigate = useNavigate();
 
   const [fullName, setFullName] = useState('');
@@ -27,6 +28,19 @@ export const SigninPage = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const handleGoogleSuccess = async (authData) => {
+    setError('');
+    setLoading(true);
+    try {
+      await loginWithGoogle(authData);
+      navigate('/customer');
+    } catch (err) {
+      setError(err?.message || 'Google sign-up failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -232,6 +246,24 @@ export const SigninPage = () => {
                 <><span>Create Account</span><ArrowRight className="w-4 h-4" /></>
               )}
             </button>
+          </div>
+
+          {/* Individual Google Registration */}
+          <div className="pt-2 space-y-3">
+            <div className="relative flex items-center justify-center my-2">
+              <div className="border-t border-slate-800/80 w-full" />
+              <span className="bg-slate-900/90 px-3 text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-slate-500 shrink-0">
+                Or Continue With
+              </span>
+              <div className="border-t border-slate-800/80 w-full" />
+            </div>
+
+            <GoogleSignInButton
+              text="Sign up with Google"
+              onSuccess={handleGoogleSuccess}
+              onError={(msg) => setError(msg)}
+              disabled={loading}
+            />
           </div>
         </form>
 
