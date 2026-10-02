@@ -14,6 +14,7 @@ import {
   Building2,
   Activity,
   Award,
+  Wallet,
   FileSearch,
   KeyRound,
   Layers,
@@ -48,6 +49,11 @@ export const Sidebar = ({
         name: 'KYC Credential',
         path: '/customer/credential',
         icon: Award,
+      },
+      {
+        name: 'Wallet',
+        path: '/customer/wallet',
+        icon: Wallet,
       },
       {
         name: 'Verification History',
@@ -214,51 +220,6 @@ export const Sidebar = ({
     </button>
   </div>
 </div>
-
-        {/* Current Portal Badge */}
-        <div className="px-4 pt-4 pb-2">
-          <div
-            className={`
-              px-3 py-2 rounded-xl
-              bg-slate-950/70 border border-slate-800
-              flex items-center
-              transition-all
-              ${isCollapsed ? 'md:justify-center' : 'justify-between'}
-            `}
-            title={
-              isCollapsed
-                ? currentRole === 'customer'
-                  ? 'Identity Wallet'
-                  : currentRole === 'issuer'
-                  ? 'Issuer Console'
-                  : 'Verifier Console'
-                : undefined
-            }
-          >
-            {/* Portal Name */}
-            {!isCollapsed && (
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 hidden md:block whitespace-nowrap">
-                {currentRole === 'customer'
-                  ? 'Identity Wallet'
-                  : currentRole === 'issuer'
-                  ? 'Issuer Console'
-                  : 'Verifier Console'}
-              </span>
-            )}
-
-            {/* Mobile Portal Name */}
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 md:hidden">
-              {currentRole === 'customer'
-                ? 'Identity Wallet'
-                : currentRole === 'issuer'
-                ? 'Issuer Console'
-                : 'Verifier Console'}
-            </span>
-
-            {/* Status */}
-            <span className="w-2 h-2 shrink-0 rounded-full bg-cyan-400 animate-pulse" />
-          </div>
-        </div>
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto">

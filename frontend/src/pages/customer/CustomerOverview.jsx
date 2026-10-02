@@ -1,15 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useKYC } from '../../context/KYCContext';
 import { StatCard } from '../../components/common/StatCard';
 import { StatusBadge } from '../../components/common/StatusBadge';
-import { QRCodeModal } from '../../components/common/QRCodeModal';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Fingerprint,
   FileCheck,
   ShieldCheck,
   Building2,
-  QrCode,
   Share2,
   Eye,
   Award,
@@ -17,12 +15,13 @@ import {
   Layers,
   Key,
   Hash,
-  AlertCircle
+  AlertCircle,
+  Lock,
+  Wallet
 } from 'lucide-react';
 
 export const CustomerOverview = () => {
   const { currentCustomer, customerCredential } = useKYC();
-  const [isQRModalOpen, setIsQRModalOpen] = useState(false);
   const navigate = useNavigate();
 
   return (
@@ -31,7 +30,7 @@ export const CustomerOverview = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 glass-card rounded-2xl p-6 border border-slate-800">
         <div>
           <span className="text-xs font-mono uppercase tracking-wider text-cyan-400 font-semibold">
-            CUSTOMER IDENTITY WALLET
+            CUSTOMER PORTAL
           </span>
           <h2 className="text-2xl font-bold text-white mt-1">
             Welcome back, {currentCustomer?.name || 'Customer'}
@@ -109,11 +108,22 @@ export const CustomerOverview = () => {
 
           {/* Credential Attributes Grid */}
           <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80">
-              <span className="text-xs font-medium text-slate-400 block">Credential ID</span>
-              <span className="text-base font-mono font-bold text-cyan-300 mt-1 block">
-                {customerCredential.id}
-              </span>
+            <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80 flex flex-col justify-between">
+              <div>
+                <span className="text-xs font-medium text-slate-400 block">Credential ID</span>
+                <span className="text-sm font-mono font-bold text-slate-500 mt-1 block tracking-widest">
+                  •••• •••• ••••
+                </span>
+              </div>
+              <div className="mt-2 pt-1">
+                <Link
+                  to="/customer/wallet"
+                  className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-cyan-400 hover:text-cyan-300 transition-colors"
+                >
+                  <Lock className="w-3 h-3" />
+                  <span>Stored in Wallet &rarr;</span>
+                </Link>
+              </div>
             </div>
 
             <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80">
@@ -186,13 +196,13 @@ export const CustomerOverview = () => {
               <span>Share Credential</span>
             </Link>
 
-            <button
-              onClick={() => setIsQRModalOpen(true)}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold shadow-lg shadow-cyan-900/30 transition-all ml-auto"
+            <Link
+              to="/customer/wallet"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-semibold shadow-lg shadow-cyan-900/30 transition-all ml-auto"
             >
-              <QrCode className="w-4 h-4" />
-              <span>Generate QR</span>
-            </button>
+              <Wallet className="w-4 h-4" />
+              <span>Identity Wallet</span>
+            </Link>
           </div>
         </div>
       ) : (
@@ -208,13 +218,6 @@ export const CustomerOverview = () => {
           </div>
         </div>
       )}
-
-      {/* QR Modal */}
-      <QRCodeModal
-        isOpen={isQRModalOpen}
-        onClose={() => setIsQRModalOpen(false)}
-        credential={customerCredential}
-      />
     </div>
   );
 };

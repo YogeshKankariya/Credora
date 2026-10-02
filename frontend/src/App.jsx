@@ -16,6 +16,7 @@ import { SigninPage } from './pages/public/SigninPage';
 import { CustomerOverview } from './pages/customer/CustomerOverview';
 import { DigitalIdentity } from './pages/customer/DigitalIdentity';
 import { KYCCredential } from './pages/customer/KYCCredential';
+import { CustomerWallet } from './pages/customer/CustomerWallet';
 import { ShareCredential } from './pages/customer/ShareCredential';
 import { CustomerHistory } from './pages/customer/CustomerHistory';
 import { CustomerSettings } from './pages/customer/CustomerSettings';
@@ -55,6 +56,7 @@ function App() {
             <Route index element={<CustomerOverview />} />
             <Route path="identity" element={<DigitalIdentity />} />
             <Route path="credential" element={<KYCCredential />} />
+            <Route path="wallet" element={<CustomerWallet />} />
             <Route path="share" element={<ShareCredential />} />
             <Route path="history" element={<CustomerHistory />} />
             <Route path="settings" element={<CustomerSettings />} />

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useKYC } from '../../context/KYCContext';
 import { StatusBadge } from '../../components/common/StatusBadge';
-import { QRCodeModal } from '../../components/common/QRCodeModal';
 import {
   Award,
   ShieldCheck,
@@ -9,23 +8,20 @@ import {
   Hash,
   Database,
   Clock,
-  QrCode,
   Share2,
   Calendar,
   Building2,
   User,
   CheckCircle2,
   AlertCircle,
-  Copy,
-  Check,
+  Lock,
+  Wallet,
   ExternalLink
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const KYCCredential = () => {
   const { currentCustomer, customerCredential } = useKYC();
-  const [isQRModalOpen, setIsQRModalOpen] = useState(false);
-  const [copiedId, setCopiedId] = useState(false);
 
   if (!customerCredential) {
     return (
@@ -38,12 +34,6 @@ export const KYCCredential = () => {
       </div>
     );
   }
-
-  const handleCopyId = () => {
-    navigator.clipboard.writeText(customerCredential.id);
-    setCopiedId(true);
-    setTimeout(() => setCopiedId(false), 2000);
-  };
 
   const isRevoked = customerCredential.status === 'REVOKED';
 
@@ -65,13 +55,13 @@ export const KYCCredential = () => {
 
         <div className="flex items-center gap-3">
           <StatusBadge status={customerCredential.status} size="lg" />
-          <button
-            onClick={() => setIsQRModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold shadow-lg shadow-cyan-900/30 transition-all"
+          <Link
+            to="/customer/wallet"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-semibold shadow-lg shadow-cyan-900/30 transition-all"
           >
-            <QrCode className="w-4 h-4" />
-            <span>Share QR</span>
-          </button>
+            <Wallet className="w-4 h-4" />
+            <span>Open Wallet</span>
+          </Link>
         </div>
       </div>
 
@@ -106,19 +96,27 @@ export const KYCCredential = () => {
 
         {/* Credential Data Grid */}
         <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80">
-            <span className="text-xs text-slate-400 block">Credential ID</span>
-            <div className="flex items-center justify-between mt-1">
-              <span className="text-base font-mono font-bold text-cyan-300">
-                {customerCredential.id}
-              </span>
-              <button
-                onClick={handleCopyId}
-                className="text-slate-400 hover:text-white transition-colors"
-                title="Copy Credential ID"
+          <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80 flex flex-col justify-between">
+            <div>
+              <span className="text-xs text-slate-400 block">Credential ID</span>
+              <div className="flex items-center justify-between mt-1">
+                <span className="text-sm font-mono font-bold text-slate-500 tracking-widest">
+                  •••• •••• ••••
+                </span>
+                <span className="text-[10px] font-mono text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-500/30">
+                  Secured
+                </span>
+              </div>
+            </div>
+            <div className="mt-3 pt-2 border-t border-slate-900 flex items-center justify-between">
+              <span className="text-[11px] text-slate-500">Stored only in Wallet</span>
+              <Link
+                to="/customer/wallet"
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-cyan-400 hover:text-cyan-300 transition-colors"
               >
-                {copiedId ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-              </button>
+                <Lock className="w-3 h-3" />
+                <span>Unlock in Wallet &rarr;</span>
+              </Link>
             </div>
           </div>
 
@@ -214,12 +212,6 @@ export const KYCCredential = () => {
           </div>
         )}
       </div>
-
-      <QRCodeModal
-        isOpen={isQRModalOpen}
-        onClose={() => setIsQRModalOpen(false)}
-        credential={customerCredential}
-      />
     </div>
   );
 };
