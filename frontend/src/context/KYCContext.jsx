@@ -297,6 +297,12 @@ if (authRes.data?.token) {
     subject: currentCustomer.name || baseCredential.subject,
   } : null;
 
+  // Derived KYC status and verification count — strictly tied to the issuing bank
+  // If there is no credential or the issuer field is empty, status is "Not Verified" and count is 0
+  const hasIssuingBank = !!(customerCredential?.issuer && customerCredential.issuer.trim() !== '' && customerCredential.issuer.toLowerCase() !== 'none');
+  const derivedKycStatus = hasIssuingBank ? 'Verified' : 'Not Verified';
+  const derivedVerificationCount = hasIssuingBank ? (customerCredential?.verificationCount ?? 0) : 0;
+
   // Approve Customer KYC
   const approveCustomerKYC = async (customerId) => {
     const customer = users.find((u) => u.id === customerId || u.dbId === customerId);
@@ -809,6 +815,10 @@ if (authRes.data?.token) {
         currentCustomer,
         currentBank,
         customerCredential,
+        // Issuing-bank-linked derived values
+        hasIssuingBank,
+        derivedKycStatus,
+        derivedVerificationCount,
         approveCustomerKYC,
         rejectCustomerKYC,
         issueCredential,

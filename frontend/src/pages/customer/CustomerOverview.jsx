@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 
 export const CustomerOverview = () => {
-  const { currentCustomer, customerCredential } = useKYC();
+  const { currentCustomer, customerCredential, derivedKycStatus, derivedVerificationCount, hasIssuingBank } = useKYC();
   const navigate = useNavigate();
 
   return (
@@ -44,7 +44,7 @@ export const CustomerOverview = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <StatusBadge status={currentCustomer?.kycStatus || 'Verified'} size="lg" />
+          <StatusBadge status={derivedKycStatus} size="lg" />
         </div>
       </div>
 
@@ -59,10 +59,10 @@ export const CustomerOverview = () => {
         />
         <StatCard
           title="KYC Status"
-          value={currentCustomer?.kycStatus || 'Verified'}
-          subtitle="Regulatory compliance met"
+          value={derivedKycStatus}
+          subtitle={hasIssuingBank ? 'Regulatory compliance met' : 'No credential issued yet'}
           icon={FileCheck}
-          color="emerald"
+          color={hasIssuingBank ? 'emerald' : 'amber'}
         />
         <StatCard
           title="Credential Status"
@@ -73,10 +73,10 @@ export const CustomerOverview = () => {
         />
         <StatCard
           title="Issuing Bank"
-          value={customerCredential ? customerCredential.issuer.split(' ')[1] : 'None'}
-          subtitle={customerCredential ? customerCredential.issuer : 'Pending'}
+          value={hasIssuingBank ? customerCredential.issuer.split(' ')[1] || customerCredential.issuer : 'None'}
+          subtitle={hasIssuingBank ? customerCredential.issuer : 'Pending — No credential issued'}
           icon={Building2}
-          color="blue"
+          color={hasIssuingBank ? 'blue' : 'amber'}
         />
       </div>
 
@@ -135,8 +135,8 @@ export const CustomerOverview = () => {
 
             <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80">
               <span className="text-xs font-medium text-slate-400 block">Verification Count</span>
-              <span className="text-base font-bold text-emerald-400 mt-1 block">
-                {customerCredential.verificationCount} times verified
+              <span className={`text-base font-bold mt-1 block ${ hasIssuingBank ? 'text-emerald-400' : 'text-slate-500'}`}>
+                {derivedVerificationCount} {hasIssuingBank ? 'times verified' : '(no issuing bank)'}
               </span>
             </div>
 
