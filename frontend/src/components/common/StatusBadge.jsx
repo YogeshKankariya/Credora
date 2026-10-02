@@ -9,7 +9,7 @@ export const StatusBadge = ({ status, size = 'sm', className = '' }) => {
   if (norm === 'ACTIVE' || norm === 'VERIFIED' || norm === 'PASS' || norm === 'CONFIRMED' || norm === 'VALID') {
     styles = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
     dotColor = 'bg-emerald-400 animate-pulse';
-  } else if (norm === 'REVOKED' || norm === 'FAIL' || norm === 'REJECTED' || norm === 'INVALID') {
+  } else if (norm === 'REVOKED' || norm === 'FAIL' || norm === 'REJECTED' || norm === 'INVALID' || norm === 'NOT VERIFIED' || norm === 'NOT_VERIFIED') {
     styles = 'bg-rose-500/10 text-rose-400 border-rose-500/30';
     dotColor = 'bg-rose-400';
   } else if (norm === 'PENDING' || norm === 'REGISTERED' || norm === 'CHECKING') {

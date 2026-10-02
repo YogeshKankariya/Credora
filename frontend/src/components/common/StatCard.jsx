@@ -1,6 +1,6 @@
 import React from 'react';
 
-export const StatCard = ({ title, value, subtitle, icon: Icon, trend, color = 'cyan' }) => {
+export const StatCard = ({ title, value, subtitle, icon: Icon, trend, color = 'cyan', valueColor }) => {
   const iconColorStyles = {
     cyan: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
     emerald: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
@@ -9,12 +9,20 @@ export const StatCard = ({ title, value, subtitle, icon: Icon, trend, color = 'c
     blue: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
   }[color] || 'bg-slate-800 text-slate-300 border-slate-700';
 
+  const valueTextColor = {
+    emerald: 'text-emerald-400',
+    rose: 'text-rose-400',
+    amber: 'text-amber-400',
+    cyan: 'text-cyan-400',
+    blue: 'text-blue-400',
+  }[valueColor] || 'text-white';
+
   return (
     <div className="glass-card rounded-xl p-5 relative overflow-hidden transition-all duration-200 hover:border-slate-700">
       <div className="flex items-start justify-between">
         <div className="space-y-1">
           <p className="text-xs font-medium uppercase tracking-wider text-slate-400">{title}</p>
-          <p className="text-2xl font-bold tracking-tight text-white">{value}</p>
+          <p className={`text-2xl font-bold tracking-tight ${valueTextColor}`}>{value}</p>
         </div>
         {Icon && (
           <div className={`p-2.5 rounded-lg border ${iconColorStyles}`}>

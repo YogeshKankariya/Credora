@@ -40,9 +40,6 @@ export const DigitalIdentity = () => {
           SELF-SOVEREIGN IDENTITY (SSI)
         </span>
         <h2 className="text-2xl sm:text-3xl font-bold text-white mt-1">My Digital Identity</h2>
-        <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-2xl">
-          Your decentralized identifier (DID) and cryptographic keys anchor your banking credentials without relying on any centralized identity provider.
-        </p>
       </div>
 
       {/* Main DID Card */}

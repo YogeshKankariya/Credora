@@ -61,7 +61,8 @@ export const CustomerOverview = () => {
           value={derivedKycStatus}
           subtitle={hasIssuingBank ? derivedVerifiedTimesLabel : 'No credential issued yet'}
           icon={FileCheck}
-          color={hasIssuingBank ? 'emerald' : 'amber'}
+          color={hasIssuingBank ? 'emerald' : 'rose'}
+          valueColor={hasIssuingBank ? 'emerald' : 'rose'}
         />
         <StatCard
           title="Credential Status"
