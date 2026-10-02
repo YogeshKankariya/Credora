@@ -59,6 +59,16 @@ app.use("/api/verification", verificationRoutes);
 app.use("/api/revocations", revocationRoutes);
 app.use("/api/institutions", institutionRoutes);
 
+// Fallback aliases without /api prefix
+app.use("/auth", authRoutes);
+app.use("/customers", customerRoutes);
+app.use("/issuer", issuerRoutes);
+app.use("/kyc", kycRoutes);
+app.use("/credentials", credentialRoutes);
+app.use("/verification", verificationRoutes);
+app.use("/revocations", revocationRoutes);
+app.use("/institutions", institutionRoutes);
+
 // ─── 404 Handler ──────────────────────────────────────────────────────────────
 app.use((_req: Request, res: Response) => {
   res.status(404).json({ success: false, message: "Route not found" });
