@@ -119,7 +119,7 @@ export async function register(req: Request, res: Response): Promise<void> {
     sendCreated(res, { user: result, token }, "Registration successful");
   } catch (err) {
     console.error("[auth.register]", err);
-    sendServerError(res);
+    sendServerError(res, err instanceof Error ? err.message : "Internal server error");
   }
 }
 
@@ -179,7 +179,7 @@ export async function login(req: Request, res: Response): Promise<void> {
     );
   } catch (err) {
     console.error("[auth.login]", err);
-    sendServerError(res);
+    sendServerError(res, err instanceof Error ? err.message : "Internal server error");
   }
 }
 

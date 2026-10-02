@@ -11,6 +11,7 @@ import credentialRoutes from "./routes/credential.routes.js";
 import verificationRoutes from "./routes/verification.routes.js";
 import revocationRoutes from "./routes/revocation.routes.js";
 import institutionRoutes from "./routes/institution.routes.js";
+import prisma from "./config/database.js";
 
 const app = express();
 
@@ -40,14 +41,28 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ─── Health check ─────────────────────────────────────────────────────────────
-app.get("/health", (_req: Request, res: Response) => {
+const healthHandler = async (_req: Request, res: Response) => {
+  let dbStatus = "unknown";
+  let dbError: string | null = null;
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    dbStatus = "connected";
+  } catch (err) {
+    dbStatus = "disconnected";
+    dbError = err instanceof Error ? err.message : String(err);
+  }
+
   res.json({
-    status: "ok",
+    status: dbStatus === "connected" ? "ok" : "degraded",
+    database: { status: dbStatus, error: dbError },
     service: "hack2ignite-backend",
     timestamp: new Date().toISOString(),
     version: "1.0.0",
   });
-});
+};
+
+app.get("/health", healthHandler);
+app.get("/api/health", healthHandler);
 
 // ─── API Routes ───────────────────────────────────────────────────────────────
 app.use("/api/auth", authRoutes);
