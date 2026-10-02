@@ -6,8 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc",
-    "start": "node dist/server.js",
+    "build": "echo 'No compile step needed — using tsx in production'",
+    "start": "node --import tsx/esm src/server.ts",
     "typecheck": "tsc --noEmit",
     "test": "node --env-file=.env ../node_modules/vitest/vitest.mjs run",
     "db:generate": "prisma generate",
@@ -28,6 +28,7 @@
     "express": "^5.2.1",
     "google-auth-library": "^11.1.0",
     "jsonwebtoken": "^9.0.3",
+    "tsx": "^4.23.13",
     "zod": "^4.6.5"
   },
   "devDependencies": {
@@ -38,7 +39,6 @@
     "@types/node": "^22.20.3",
     "nodemon": "^3.1.14",
     "prisma": "^6.19.3",
-    "tsx": "^4.23.13",
     "typescript": "^5.8.3",
     "vitest": "^5.0.1"
   },
