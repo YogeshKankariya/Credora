@@ -5,10 +5,8 @@
 
 // In production, VITE_API_URL points to the deployed Railway backend.
 // In local dev, Vite's proxy rewrites /api → http://localhost:5000 automatically.
-const BASE_URL = import.meta.env.VITE_API_URL
-  ? `${import.meta.env.VITE_API_URL}/api`
-  : '/api';
-
+const BASE_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 function getToken() {
   return localStorage.getItem('decentralized_kyc_token');
