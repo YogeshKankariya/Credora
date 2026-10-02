@@ -51,13 +51,8 @@ export const CustomerOverview = () => {
         />
         <StatCard
           title="KYC Status"
-<<<<<<< HEAD
           value={currentCustomer?.kycStatus || 'Verified'}
           subtitle=""
-=======
-          value={derivedKycStatus}
-          subtitle={hasIssuingBank ? derivedVerifiedTimesLabel : 'No credential issued yet'}
->>>>>>> 41debcc522edeefb7762238b8090aff5e0d14b39
           icon={FileCheck}
           color={hasIssuingBank ? 'emerald' : 'amber'}
         />
