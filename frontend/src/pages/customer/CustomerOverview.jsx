@@ -35,12 +35,6 @@ export const CustomerOverview = () => {
           <h2 className="text-2xl font-bold text-white mt-1">
             Welcome back, {currentCustomer?.name || 'Customer'}
           </h2>
-          <p className="text-xs text-slate-400 mt-1 flex items-center gap-2">
-            <span>DID:</span>
-            <span className="font-mono text-slate-300 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
-              {currentCustomer?.did || 'did:customer:demo'}
-            </span>
-          </p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -53,14 +47,13 @@ export const CustomerOverview = () => {
         <StatCard
           title="Identity Status"
           value={currentCustomer?.identityStatus || 'Verified'}
-          subtitle={`DID: ${currentCustomer?.did ? currentCustomer.did.slice(0, 16) : 'did:customer'}...`}
           icon={Fingerprint}
           color="cyan"
         />
         <StatCard
           title="KYC Status"
           value={currentCustomer?.kycStatus || 'Verified'}
-          subtitle="Regulatory compliance met"
+          subtitle=""
           icon={FileCheck}
           color="emerald"
         />

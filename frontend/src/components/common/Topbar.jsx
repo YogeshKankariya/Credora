@@ -28,9 +28,6 @@ export const Topbar = ({ onToggleSidebar }) => {
               <span>Welcome back, {currentCustomer?.name ? currentCustomer.name.split(' ')[0] : 'Customer'}</span>
               <StatusBadge status={currentCustomer?.kycStatus || 'Verified'} size="sm" />
             </h1>
-            <p className="text-xs text-slate-400 font-mono hidden sm:block">
-              {currentCustomer?.did ? `${currentCustomer.did.slice(0, 22)}...` : ''}
-            </p>
           </div>
         )}
 
