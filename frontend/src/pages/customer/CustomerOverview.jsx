@@ -14,14 +14,13 @@ import {
   Calendar,
   Layers,
   Key,
-  Hash,
   AlertCircle,
   Lock,
   Wallet
 } from 'lucide-react';
 
 export const CustomerOverview = () => {
-  const { currentCustomer, customerCredential } = useKYC();
+  const { currentCustomer, customerCredential, derivedKycStatus, derivedVerificationCount, derivedVerifiedTimesLabel, hasIssuingBank } = useKYC();
   const navigate = useNavigate();
 
   return (
@@ -38,7 +37,7 @@ export const CustomerOverview = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <StatusBadge status={currentCustomer?.kycStatus || 'Verified'} size="lg" />
+          <StatusBadge status={derivedKycStatus} size="lg" />
         </div>
       </div>
 
@@ -52,10 +51,15 @@ export const CustomerOverview = () => {
         />
         <StatCard
           title="KYC Status"
+<<<<<<< HEAD
           value={currentCustomer?.kycStatus || 'Verified'}
           subtitle=""
+=======
+          value={derivedKycStatus}
+          subtitle={hasIssuingBank ? derivedVerifiedTimesLabel : 'No credential issued yet'}
+>>>>>>> 41debcc522edeefb7762238b8090aff5e0d14b39
           icon={FileCheck}
-          color="emerald"
+          color={hasIssuingBank ? 'emerald' : 'amber'}
         />
         <StatCard
           title="Credential Status"
@@ -66,10 +70,10 @@ export const CustomerOverview = () => {
         />
         <StatCard
           title="Issuing Bank"
-          value={customerCredential ? customerCredential.issuer.split(' ')[1] : 'None'}
-          subtitle={customerCredential ? customerCredential.issuer : 'Pending'}
+          value={hasIssuingBank ? customerCredential.issuer.split(' ')[1] || customerCredential.issuer : 'None'}
+          subtitle={hasIssuingBank ? customerCredential.issuer : 'Pending — No credential issued'}
           icon={Building2}
-          color="blue"
+          color={hasIssuingBank ? 'blue' : 'amber'}
         />
       </div>
 
@@ -128,9 +132,10 @@ export const CustomerOverview = () => {
 
             <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80">
               <span className="text-xs font-medium text-slate-400 block">Verification Count</span>
-              <span className="text-base font-bold text-emerald-400 mt-1 block">
-                {customerCredential.verificationCount} times verified
+              <span className={`text-base font-bold mt-1 block ${ hasIssuingBank ? 'text-emerald-400' : 'text-slate-500'}`}>
+                {derivedVerificationCount}
               </span>
+              <span className="text-[11px] text-slate-500 block mt-0.5">{derivedVerifiedTimesLabel}</span>
             </div>
 
             <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80">
@@ -146,14 +151,6 @@ export const CustomerOverview = () => {
               <span className="text-sm font-semibold text-slate-200 mt-1 flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-slate-400" />
                 <span>{customerCredential.expiryDate}</span>
-              </span>
-            </div>
-
-            <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80">
-              <span className="text-xs font-medium text-slate-400 block">Payload Hash</span>
-              <span className="text-sm font-mono text-slate-400 mt-1 flex items-center gap-2">
-                <Hash className="w-4 h-4 text-cyan-400" />
-                <span>{customerCredential.shortHash}</span>
               </span>
             </div>
           </div>
