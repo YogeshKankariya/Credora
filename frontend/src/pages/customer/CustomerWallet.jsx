@@ -30,16 +30,43 @@ export const CustomerWallet = () => {
   const [copiedId, setCopiedId] = useState(false);
   const [authError, setAuthError] = useState('');
 
-  const targetEmail = (currentCustomer?.email || 'your registered Google account').toLowerCase();
+  const targetEmail = (currentCustomer?.email || '').toLowerCase().trim();
+
+  // Decode a JWT payload without verification (verification happens server-side)
+  const decodeJwtEmail = (token) => {
+    try {
+      const payload = token.split('.')[1];
+      const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+      return (decoded.email || '').toLowerCase().trim();
+    } catch {
+      return null;
+    }
+  };
 
   const handleGoogleSuccess = async (authData) => {
     setAuthError('');
     try {
-      // If authData is object with demoUser or payload
-      const emailFromAuth = authData?.demoUser?.email;
-      if (emailFromAuth && targetEmail && emailFromAuth !== targetEmail) {
-        // In demo or test mode, still allow if user is testing with demo account
-        console.warn(`Authenticated as ${emailFromAuth} for target ${targetEmail}`);
+      let authenticatedEmail = null;
+
+      if (typeof authData === 'string') {
+        // Real Google JWT token — decode to get email
+        authenticatedEmail = decodeJwtEmail(authData);
+      } else if (authData?.demoUser?.email) {
+        // Demo mode — email comes from demoUser object
+        authenticatedEmail = authData.demoUser.email.toLowerCase().trim();
+      }
+
+      // Strict email match check
+      if (!authenticatedEmail) {
+        setAuthError('Could not retrieve email from Google authentication. Please try again.');
+        return;
+      }
+
+      if (targetEmail && authenticatedEmail !== targetEmail) {
+        setAuthError(
+          `Access denied. You signed in as "${authenticatedEmail}" but this wallet belongs to "${targetEmail}". Please use your registered account.`
+        );
+        return;
       }
 
       setIsUnlocked(true);
@@ -139,6 +166,7 @@ export const CustomerWallet = () => {
               text="Authenticate with Google to Unlock"
               onSuccess={handleGoogleSuccess}
               onError={(err) => setAuthError(err)}
+              hintEmail={targetEmail}
             />
             <p className="text-[11px] text-slate-500 mt-3 flex items-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />

@@ -7,6 +7,7 @@ export const GoogleSignInButton = ({
   text = 'Sign in with Google',
   disabled = false,
   className = '',
+  hintEmail = '',
 }) => {
   const [loading, setLoading] = useState(false);
   const [showConfigNotice, setShowConfigNotice] = useState(false);
@@ -103,11 +104,13 @@ export const GoogleSignInButton = ({
     setShowConfigNotice(false);
     setLoading(true);
     try {
+      // Use the hintEmail (logged-in customer's email) so email verification works correctly
+      const email = hintEmail || 'demo.user@gmail.com';
       await onSuccess?.({
         token: 'demo_google_token_' + Date.now(),
         demoUser: {
-          email: 'khushi.individual@gmail.com',
-          name: 'Khushi (Google User)',
+          email,
+          name: email.split('@')[0].replace(/[._]/g, ' '),
           picture: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
         },
       });
