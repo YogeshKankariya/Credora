@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 
 export const CustomerOverview = () => {
-  const { currentCustomer, customerCredential, derivedKycStatus, derivedVerificationCount, hasIssuingBank } = useKYC();
+  const { currentCustomer, customerCredential, derivedKycStatus, derivedVerificationCount, derivedVerifiedTimesLabel, hasIssuingBank } = useKYC();
   const navigate = useNavigate();
 
   return (
@@ -60,7 +60,7 @@ export const CustomerOverview = () => {
         <StatCard
           title="KYC Status"
           value={derivedKycStatus}
-          subtitle={hasIssuingBank ? 'Regulatory compliance met' : 'No credential issued yet'}
+          subtitle={hasIssuingBank ? derivedVerifiedTimesLabel : 'No credential issued yet'}
           icon={FileCheck}
           color={hasIssuingBank ? 'emerald' : 'amber'}
         />
@@ -136,8 +136,9 @@ export const CustomerOverview = () => {
             <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80">
               <span className="text-xs font-medium text-slate-400 block">Verification Count</span>
               <span className={`text-base font-bold mt-1 block ${ hasIssuingBank ? 'text-emerald-400' : 'text-slate-500'}`}>
-                {derivedVerificationCount} {hasIssuingBank ? 'times verified' : '(no issuing bank)'}
+                {derivedVerificationCount}
               </span>
+              <span className="text-[11px] text-slate-500 block mt-0.5">{derivedVerifiedTimesLabel}</span>
             </div>
 
             <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80">

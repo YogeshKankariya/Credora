@@ -299,9 +299,18 @@ if (authRes.data?.token) {
 
   // Derived KYC status and verification count — strictly tied to the issuing bank
   // If there is no credential or the issuer field is empty, status is "Not Verified" and count is 0
+  // When an issuing bank IS present, count starts at 1 (the issuance event itself = first verification)
   const hasIssuingBank = !!(customerCredential?.issuer && customerCredential.issuer.trim() !== '' && customerCredential.issuer.toLowerCase() !== 'none');
   const derivedKycStatus = hasIssuingBank ? 'Verified' : 'Not Verified';
-  const derivedVerificationCount = hasIssuingBank ? (customerCredential?.verificationCount ?? 0) : 0;
+  const rawCount = hasIssuingBank ? (customerCredential?.verificationCount ?? 0) : 0;
+  // Issuance counts as the first verification, so minimum is 1 when issued
+  const derivedVerificationCount = hasIssuingBank ? Math.max(1, rawCount) : 0;
+  // Human-readable label: "1st time", "2 times", etc.
+  const derivedVerifiedTimesLabel = !hasIssuingBank
+    ? 'Not verified (no issuing bank)'
+    : derivedVerificationCount === 1
+    ? 'Verified 1 time (initial issuance)'
+    : `Verified ${derivedVerificationCount} times`;
 
   // Approve Customer KYC
   const approveCustomerKYC = async (customerId) => {
@@ -819,6 +828,7 @@ if (authRes.data?.token) {
         hasIssuingBank,
         derivedKycStatus,
         derivedVerificationCount,
+        derivedVerifiedTimesLabel,
         approveCustomerKYC,
         rejectCustomerKYC,
         issueCredential,

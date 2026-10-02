@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 
 export const CustomerWallet = () => {
-  const { currentCustomer, customerCredential, derivedVerificationCount, hasIssuingBank, addToast } = useKYC();
+  const { currentCustomer, customerCredential, derivedVerificationCount, derivedVerifiedTimesLabel, hasIssuingBank, addToast } = useKYC();
   const [isUnlocked, setIsUnlocked] = useState(() => {
     return sessionStorage.getItem('customer_wallet_unlocked') === 'true';
   });
@@ -272,9 +272,9 @@ export const CustomerWallet = () => {
               <div className="p-4 rounded-xl bg-slate-950/50 border border-slate-800/80">
                 <span className="text-xs text-slate-400 block">Verification Count</span>
                 <span className={`text-sm font-bold mt-1 block ${hasIssuingBank ? 'text-emerald-400' : 'text-slate-500'}`}>
-                  {derivedVerificationCount} institutional audits
-                  {!hasIssuingBank && <span className="block text-[11px] text-slate-600 font-normal">No issuing bank — count locked at 0</span>}
+                  {derivedVerificationCount}
                 </span>
+                <span className="text-[11px] text-slate-500 block mt-0.5">{derivedVerifiedTimesLabel}</span>
               </div>
             </div>
 
