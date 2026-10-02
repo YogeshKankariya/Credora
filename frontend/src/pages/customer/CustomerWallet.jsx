@@ -178,19 +178,13 @@ export const CustomerWallet = () => {
         /* ─── UNLOCKED VAULT STATE ─────────────────────────── */
         <div className="space-y-6">
           {/* Active Unlock Status Banner */}
-          <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center justify-between gap-3">
+          <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center gap-3">
             <div className="flex items-center gap-2.5">
               <CheckCircle2 className="w-4 h-4 shrink-0" />
               <span>
                 <strong>Authenticated:</strong> Credential ID unlocked for this secure browser session.
               </span>
             </div>
-            <button
-              onClick={handleLockWallet}
-              className="text-xs text-emerald-400 hover:text-emerald-300 underline font-medium cursor-pointer"
-            >
-              Re-lock now
-            </button>
           </div>
 
           {/* Primary Credential ID Vault Card */}
