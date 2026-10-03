@@ -19,7 +19,7 @@ import {
 import { useNavigate, Link } from 'react-router-dom';
 
 export const VerifierOverview = () => {
-  const { credentials } = useKYC();
+  const { credentials, verificationHistory, currentBank } = useKYC();
   const [credentialIdInput, setCredentialIdInput] = useState('');
   const [isSimulatedScanOpen, setIsSimulatedScanOpen] = useState(false);
   const navigate = useNavigate();
@@ -33,6 +33,34 @@ export const VerifierOverview = () => {
   const activeCred = credentials.find((c) => c.status === 'ACTIVE');
   const revokedCred = credentials.find((c) => c.status === 'REVOKED');
 
+    const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const todayMs = startOfToday.getTime();
+  const yesterdayMs = todayMs - 24 * 60 * 60 * 1000;
+
+  const checks = verificationHistory.filter(
+    (h) => h.result === 'VERIFIED' || h.result === 'REJECTED'
+  );
+
+  const timeOf = (h) => (h.verifiedAt ? new Date(h.verifiedAt).getTime() : 0);
+  const today = checks.filter((h) => timeOf(h) >= todayMs);
+  const yesterday = checks.filter((h) => timeOf(h) >= yesterdayMs && timeOf(h) < todayMs);
+
+  const verificationsToday = today.length;
+  const successful = today.filter((h) => h.result === 'VERIFIED').length;
+  const failed = verificationsToday - successful;
+  const credsChecked = new Set(
+    today.filter((h) => h.result === 'VERIFIED').map((h) => h.credentialId)
+  ).size;
+
+  const passRate = verificationsToday
+    ? ((successful / verificationsToday) * 100).toFixed(1)
+    : '0.0';
+
+  const vsYesterday = yesterday.length
+    ? Math.round(((verificationsToday - yesterday.length) / yesterday.length) * 100)
+    : null;
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -41,13 +69,7 @@ export const VerifierOverview = () => {
           <span className="text-xs font-mono uppercase tracking-wider text-emerald-400 font-semibold">
             CROSS-INSTITUTIONAL TRUST NETWORK
           </span>
-          <h2 className="text-2xl font-bold text-white mt-1">Demo Cooperative Bank</h2>
-          <p className="text-xs text-slate-400 mt-1 flex items-center gap-2">
-            <span>Verifier DID:</span>
-            <span className="font-mono text-slate-300 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
-              did:bank:coop-002-vfy
-            </span>
-          </p>
+          <h2 className="text-2xl font-bold text-white mt-1">{currentBank.name || 'Verifier Bank'}</h2>
         </div>
 
         <div className="flex items-center gap-2">
@@ -63,31 +85,35 @@ export const VerifierOverview = () => {
 
       {/* 4 Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
+                <StatCard
           title="Verifications Today"
-          value="87"
+          value={verificationsToday.toLocaleString()}
           subtitle="Cross-bank requests"
           icon={FileSearch}
           color="blue"
-          trend="+18% vs yesterday"
+          trend={
+            vsYesterday !== null
+              ? `${vsYesterday >= 0 ? '+' : ''}${vsYesterday}% vs yesterday`
+              : undefined
+          }
         />
         <StatCard
           title="Successful"
-          value="81"
-          subtitle="93.1% pass rate"
+          value={successful.toLocaleString()}
+          subtitle={`${passRate}% pass rate`}
           icon={CheckCircle2}
           color="emerald"
         />
         <StatCard
           title="Failed"
-          value="6"
+          value={failed.toLocaleString()}
           subtitle="Revoked or invalid"
           icon={XCircle}
           color="rose"
         />
         <StatCard
           title="Active Credentials Checked"
-          value="79"
+          value={credsChecked.toLocaleString()}
           subtitle="Real-time ledger validated"
           icon={ShieldCheck}
           color="cyan"

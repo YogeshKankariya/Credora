@@ -81,11 +81,14 @@ export const Sidebar = ({
         icon: Users,
       },
       {
+<<<<<<< Updated upstream
         name: 'KYC Verification',
         path: kycAuditPath,
         icon: FileCheck,
       },
       {
+=======
+>>>>>>> Stashed changes
         name: 'Issued Credentials',
         path: '/bank/issuer/credentials',
         icon: Award,

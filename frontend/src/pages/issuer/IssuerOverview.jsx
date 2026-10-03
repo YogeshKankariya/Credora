@@ -4,21 +4,36 @@ import { StatCard } from '../../components/common/StatCard';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { Users, FileCheck, Award, ShieldAlert, Activity, ArrowRight, CheckCircle2, PlusCircle, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
 export const IssuerOverview = () => {
-  const { currentBank, users, credentials } = useKYC();
+  const { currentBank, users, credentials, verificationHistory } = useKYC();
 
-  // Compute live counts or mix with realistic enterprise bank numbers
+  const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+  const totalCustomers = users.length;
   const verifiedCount = users.filter((u) => u.kycStatus === 'Verified').length;
-  const activeCreds = credentials.filter((c) => c.status === 'ACTIVE').length;
-  const revokedCreds = credentials.filter((c) => c.status === 'REVOKED').length;
+  const pendingUsers = users.filter((u) => u.kycStatus === 'Pending');
 
-  const activities = [
-    { type: 'VERIFIED', subject: 'Rahul Sharma', time: '2 min ago', desc: 'Biometric document verification passed' },
-    { type: 'ISSUED', subject: 'Priya Mehta', time: '8 min ago', desc: 'W3C Tier-1 Verifiable Credential minted' },
-    { type: 'REVOKED', subject: 'Amit Shah', time: '32 min ago', desc: 'Revocation broadcast to blockchain registry' },
-    { type: 'VERIFIED', subject: 'Sneha Patil', time: '1 hour ago', desc: 'Government photo ID authenticity confirmed' },
-  ];
+  const bankCreds = credentials.filter(
+    (c) => !c.issuerDid || c.issuerDid === currentBank.did
+  );
+  const activeCreds = bankCreds.filter((c) => c.status === 'ACTIVE').length;
+  const revokedCreds = bankCreds.filter((c) => c.status === 'REVOKED').length;
+
+  const newThisWeek = users.filter(
+    (u) => u.createdAt && Date.now() - new Date(u.createdAt).getTime() < WEEK_MS
+  ).length;
+
+  const verificationRate = totalCustomers
+    ? ((verifiedCount / totalCustomers) * 100).toFixed(1)
+    : '0.0';
+
+  const activities = verificationHistory.slice(0, 5).map((h) => ({
+    type: h.result,
+    subject: h.subject,
+    desc: h.purpose,
+    time: h.timestamp,
+  }));
+
 
   return (
     <div className="space-y-8">
@@ -29,12 +44,6 @@ export const IssuerOverview = () => {
             INSTITUTIONAL ISSUING AUTHORITY
           </span>
           <h2 className="text-2xl font-bold text-white mt-1">{currentBank.name}</h2>
-          <p className="text-xs text-slate-400 mt-1 flex items-center gap-2">
-            <span>Issuer DID:</span>
-            <span className="font-mono text-slate-300 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
-              {currentBank.did}
-            </span>
-          </p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -50,31 +59,31 @@ export const IssuerOverview = () => {
 
       {/* 4 Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
+                <StatCard
           title="Customers"
-          value="1,284"
+          value={totalCustomers.toLocaleString()}
           subtitle="Registered accounts"
           icon={Users}
           color="blue"
-          trend="+12 this week"
+          trend={newThisWeek > 0 ? `+${newThisWeek} this week` : undefined}
         />
         <StatCard
           title="KYC Verified"
-          value="1,102"
-          subtitle="85.8% verification rate"
+          value={verifiedCount.toLocaleString()}
+          subtitle={`${verificationRate}% verification rate`}
           icon={FileCheck}
           color="emerald"
         />
         <StatCard
           title="Active Credentials"
-          value={(1047 + (activeCreds - 3)).toLocaleString()}
+          value={activeCreds.toLocaleString()}
           subtitle="On-chain anchored"
           icon={Award}
           color="cyan"
         />
         <StatCard
           title="Revoked"
-          value={(55 + revokedCreds).toLocaleString()}
+          value={revokedCreds.toLocaleString()}
           subtitle="Registry flagged"
           icon={ShieldAlert}
           color="rose"
@@ -100,6 +109,9 @@ export const IssuerOverview = () => {
           </div>
 
           <div className="divide-y divide-slate-800/80">
+                      {activities.length === 0 && (
+              <p className="py-6 text-xs text-slate-500 text-center">No activity yet.</p>
+            )}
             {activities.map((act, index) => {
               const isIssued = act.type === 'ISSUED';
               const isRevoked = act.type === 'REVOKED';
@@ -153,9 +165,10 @@ export const IssuerOverview = () => {
             </p>
 
             <div className="mt-4 space-y-2.5">
-              {users
-                .filter((u) => u.kycStatus === 'Pending')
-                .map((u) => (
+              {pendingUsers.length === 0 && (
+                <p className="text-xs text-slate-500">No customers awaiting review.</p>
+              )}
+              {pendingUsers.map((u) => (
                   <div
                     key={u.id}
                     className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between"
@@ -180,7 +193,7 @@ export const IssuerOverview = () => {
               to="/bank/issuer/customers"
               className="w-full py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
             >
-              <span>View All 1,284 Customers</span>
+              <span>View All {totalCustomers.toLocaleString()} Customers</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>

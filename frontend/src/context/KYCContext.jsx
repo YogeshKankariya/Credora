@@ -35,16 +35,23 @@ function formatCustomer(cust) {
     email: user.email || cust.email || 'rahul.sharma@demo-identity.org',
     did: cust.did || 'did:demo:7f92a8c1e92d8471bb90a42f8',
     publicKey: cust.publicKey || '',
-    identityCreated: cust.createdAt
+    identityCreated: cust.createdAt 
       ? new Date(cust.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
       : '10 Aug 2026',
+<<<<<<< Updated upstream
     keyStatus: cust.keyStatus === 'ACTIVE' ? 'Hardware Enclave Secured' : 'Pending Verification',
     identityStatus: identity,
     kycStatus: kyc,
+=======
+          createdAt: cust.createdAt || null,
+    keyStatus: cust.keyStatus === 'ACTIVE' ? 'Hardware Enclave Secured' : (cust.keyStatus || 'Hardware Enclave Secured'),
+    identityStatus: cust.identityStatus === 'VERIFIED' ? 'Verified' : 'Pending',
+    kycStatus: cust.kycStatus === 'VERIFIED' ? 'Verified' : cust.kycStatus === 'PENDING' ? 'Pending' : 'Rejected',
+>>>>>>> Stashed changes
     currentCredentialId: cust.credentials?.[0]?.credentialId || null,
     dob: cust.dateOfBirth
       ? new Date(cust.dateOfBirth).toLocaleDateString('en-GB')
-      : '15/05/1992 (Synthetic)',
+      : '15/05/1992',
     address: cust.address || '402 Skyline Boulevard, Demo Tech Park, Bangalore 560103',
     documentType: cust.documentType || 'National ID (PAN)',
     documentNumber: cust.documentNumberHash
@@ -70,10 +77,13 @@ function formatBank(b) {
       ? new Date(b.accreditedDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
       : '15 Jan 2024',
     rating: 'AAA Sovereign-Backed',
+<<<<<<< Updated upstream
     activeCredentialsCount: b.activeCredentialsCount ?? 0,
     revokedCount: b.revokedCount ?? 0,
     pendingKYCCount: b.pendingKYCCount ?? 0,
     totalCustomersCount: b.totalCustomersCount ?? 0,
+=======
+>>>>>>> Stashed changes
     status: b.status === 'ACTIVE' ? 'Active Regulatory Participant' : b.status,
   };
 }
@@ -213,21 +223,15 @@ export const KYCProvider = ({ children }) => {
   }, [activeBankId]);
 
   // Authenticate and fetch live database data
-  const loadBackendData = useCallback(async (role = currentRole) => {
-    try {
-      // Customer demo works without backend authentication.
-// Bank roles can continue using the backend.
-if (role === 'customer') {
-  return;
-}
+const loadBackendData = useCallback(async (role = currentRole, { silent = false } = {}) => {
+  try {
+    if (role === 'customer') return;
 
-const creds = ROLE_ACCOUNTS[role];
-const authRes = await api.post('/auth/login', creds);
-
-if (authRes.data?.token) {
-  setToken(authRes.data.token);
-}
-
+    if (!silent) {
+      const creds = ROLE_ACCOUNTS[role];
+      const authRes = await api.post('/auth/login', creds);
+      if (authRes.data?.token) setToken(authRes.data.token);
+    }
       // Fetch in parallel
       const [banksRes, customersRes, credsRes, historyRes] = await Promise.allSettled([
         api.get('/institutions'),
@@ -267,6 +271,7 @@ if (authRes.data?.token) {
           timestamp: log.verifiedAt
             ? new Date(log.verifiedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             : 'Just now',
+            verifiedAt: log.verifiedAt || log.createdAt || log.timestamp || null,
           result: log.result === 'PASS' ? 'VERIFIED' : 'REJECTED',
           status: log.result === 'PASS' ? 'PASS' : 'FAIL',
           verifierDid: log.verifier?.did || 'did:bank:coop-002-vfy',
@@ -290,6 +295,13 @@ if (authRes.data?.token) {
   useEffect(() => {
     loadBackendData(currentRole);
   }, [currentRole, loadBackendData]);
+
+  // Auto-refresh issuer/verifier data every 8 seconds
+useEffect(() => {
+  if (currentRole === 'customer') return;
+  const id = setInterval(() => loadBackendData(currentRole, { silent: true }), 8000);
+  return () => clearInterval(id);
+}, [currentRole, loadBackendData]);
 
   // Active helpers
   const currentCustomer = users.find((u) => u.id === activeCustomerId) || users[0] || {};
@@ -598,6 +610,7 @@ if (authRes.data?.token) {
         institution: verifierBankName,
         purpose: 'Customer Cross-Institutional Onboarding',
         timestamp: 'Just now',
+        verifiedAt: new Date().toISOString(),
         result: overall === 'PASS' ? 'VERIFIED' : 'REJECTED',
         status: overall === 'PASS' ? 'PASS' : 'FAIL',
         verifierDid: 'did:bank:coop-002-vfy',
@@ -684,11 +697,19 @@ if (authRes.data?.token) {
           did: backendUser.did || `did:customer:${backendUser.id.slice(0, 8)}`,
           publicKey: '',
           identityCreated: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+<<<<<<< Updated upstream
           keyStatus: 'Pending Verification',
           identityStatus: 'Created',
           kycStatus: 'Not Submitted',
           currentCredentialId: null,
           dob: '01/01/1995',
+=======
+          keyStatus: 'Hardware Enclave Secured',
+          identityStatus: 'Pending',
+          kycStatus: 'Pending',
+          currentCredentialId: null,
+          dob: '15/05/1992',
+>>>>>>> Stashed changes
           address: '402 Skyline Boulevard, Demo Tech Park, Bangalore 560103',
           documentType: 'National ID (PAN)',
           documentNumber: 'ABCDE1234F',
@@ -736,9 +757,15 @@ if (authRes.data?.token) {
               did: backendUser.did || `did:customer:${backendUser.id.slice(0, 8)}`,
               publicKey: '',
               identityCreated: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+<<<<<<< Updated upstream
               keyStatus: 'Pending Verification',
               identityStatus: 'Created',
               kycStatus: isRahul ? 'Pending' : 'Not Submitted',
+=======
+              keyStatus: 'Hardware Enclave Secured',
+              identityStatus: 'Pending',
+              kycStatus: 'Pending',
+>>>>>>> Stashed changes
               currentCredentialId: null,
               dob: '15/05/1992',
               address: '402 Skyline Boulevard, Demo Tech Park, Bangalore 560103',
@@ -767,7 +794,7 @@ if (authRes.data?.token) {
             }
           }
         }
-        await loadBackendData(roleStr);
+await loadBackendData(roleStr, { silent: true });
         addToast('Login successful!', 'success');
         return backendUser;
       }
@@ -812,9 +839,9 @@ if (authRes.data?.token) {
             publicKey: '',
             identityCreated: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
             keyStatus: 'Hardware Enclave Secured',
-            identityStatus: 'Verified',
-            kycStatus: 'Verified',
-            currentCredentialId: 'KYC-DEMO-001',
+            identityStatus: 'Pending',
+            kycStatus: 'Pending',
+            currentCredentialId: null,
             dob: '15/05/1992',
             address: '402 Skyline Boulevard, Demo Tech Park, Bangalore 560103',
             documentType: 'National ID (PAN)',
@@ -824,7 +851,7 @@ if (authRes.data?.token) {
           return [newCustomer, ...prev];
         });
         setActiveCustomerId(backendUser.id);
-        await loadBackendData(roleStr);
+await loadBackendData(roleStr, { silent: true });
         addToast('Signed in with Google successfully!', 'success');
         return backendUser;
       }

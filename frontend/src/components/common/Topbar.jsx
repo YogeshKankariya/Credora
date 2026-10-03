@@ -38,9 +38,6 @@ export const Topbar = ({ onToggleSidebar }) => {
               <span className="text-xs font-normal text-slate-400 hidden sm:inline">|</span>
               <span className="text-xs font-semibold text-blue-400 hidden sm:inline">{currentBank.name}</span>
             </h1>
-            <div className="flex items-center gap-2 text-xs text-slate-400">
-              <span className="font-mono text-[11px] text-slate-400">{currentBank.did}</span>
-            </div>
           </div>
         )}
 
@@ -51,7 +48,6 @@ export const Topbar = ({ onToggleSidebar }) => {
               <span className="text-xs font-normal text-slate-400 hidden sm:inline">|</span>
               <span className="text-xs font-semibold text-emerald-400 hidden sm:inline">Demo Cooperative Bank</span>
             </h1>
-            <p className="text-xs text-slate-400">Institutional Credential Verification & Blockchain Auditing</p>
           </div>
         )}
       </div>

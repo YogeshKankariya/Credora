@@ -246,6 +246,123 @@ interface GooglePayload {
   email_verified?: boolean;
 }
 
+/**
+ * POST /auth/verify-wallet
+ * Re-authenticates with a Google token and verifies the resolved email
+ * matches the currently-signed-in user's email from the database.
+ * Used exclusively by the Identity Wallet unlock flow.
+ *
+ * Requires: Bearer JWT (authenticate middleware)
+ * Body: { token, credential, demoUser? }  — same shape as /auth/google
+ */
+export async function verifyWalletAccess(req: Request, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      sendError(res, "Not authenticated", 401);
+      return;
+    }
+
+    // Look up the authenticated user's email from DB (source of truth)
+    const dbUser = await prisma.user.findUnique({
+      where: { id: req.user.userId },
+      select: { email: true },
+    });
+
+    if (!dbUser) {
+      sendError(res, "Authenticated user not found in database", 404);
+      return;
+    }
+
+    const registeredEmail = dbUser.email.toLowerCase();
+
+    const { token: idTokenInput, credential, demoUser } = req.body;
+    const idToken = idTokenInput || credential;
+
+    let resolvedEmail = "";
+
+    // ── Demo / test mode ─────────────────────────────────────────────────────
+    if (
+      process.env["NODE_ENV"] !== "production" &&
+      idToken &&
+      typeof idToken === "string" &&
+      idToken.startsWith("demo_google_token")
+    ) {
+      resolvedEmail = (demoUser?.email || "").toLowerCase();
+      if (!resolvedEmail) {
+        sendError(res, "Demo token missing email", 400);
+        return;
+      }
+    } else {
+      // ── Real Google token verification ────────────────────────────────────
+      if (!idToken) {
+        sendError(res, "Google ID token or credential is required", 400);
+        return;
+      }
+
+      const clientId = process.env["GOOGLE_CLIENT_ID"];
+      let payload: GooglePayload | undefined;
+
+      if (clientId && !clientId.includes("your_google_client_id_here")) {
+        try {
+          const ticket = await googleClient.verifyIdToken({
+            idToken,
+            audience: clientId,
+          });
+          payload = ticket.getPayload() as GooglePayload | undefined;
+        } catch (verifyErr) {
+          console.warn("[auth.verifyWalletAccess] verifyIdToken fallback:", (verifyErr as Error).message);
+        }
+      }
+
+      if (!payload) {
+        try {
+          const resp = await fetch(
+            `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`
+          );
+          if (resp.ok) {
+            payload = (await resp.json()) as GooglePayload;
+          } else {
+            const errData = await resp.json().catch(() => ({}));
+            sendError(
+              res,
+              "Google token verification failed",
+              401,
+              (errData as any).error_description || "Invalid Google ID token"
+            );
+            return;
+          }
+        } catch {
+          sendError(res, "Failed to connect to Google verification service", 502);
+          return;
+        }
+      }
+
+      if (!payload?.email) {
+        sendError(res, "Unable to extract email from Google profile", 400);
+        return;
+      }
+
+      resolvedEmail = payload.email.toLowerCase();
+    }
+
+    // ── Email match check ─────────────────────────────────────────────────────
+    if (resolvedEmail !== registeredEmail) {
+      sendError(
+        res,
+        "Google account does not match your registered email",
+        403,
+        `Wallet requires authentication with ${registeredEmail}`
+      );
+      return;
+    }
+
+    sendSuccess(res, { verified: true, email: registeredEmail }, "Wallet access verified");
+  } catch (err) {
+    console.error("[auth.verifyWalletAccess]", err);
+    sendServerError(res);
+  }
+}
+
 export async function googleLogin(req: Request, res: Response): Promise<void> {
   try {
     const { token: idTokenInput, credential, demoUser } = req.body;
