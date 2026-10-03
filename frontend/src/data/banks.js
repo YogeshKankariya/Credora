@@ -11,10 +11,10 @@ export const initialBanks = [
     publicKey: '04:8A:91:7C:E2:B4:90:3A:D8:21:49:11:CD:88:99:A2:4E:91:F0:D2',
     accreditedDate: '15 Jan 2024',
     rating: 'AAA Sovereign-Backed',
-    activeCredentialsCount: 1047,
-    revokedCount: 55,
-    pendingKYCCount: 182,
-    totalCustomersCount: 1284,
+    activeCredentialsCount: 0,
+    revokedCount: 0,
+    pendingKYCCount: 1,
+    totalCustomersCount: 1,
     status: 'Active Regulatory Participant'
   },
   {
@@ -32,25 +32,7 @@ export const initialBanks = [
     activeCredentialsCount: 0,
     revokedCount: 0,
     pendingKYCCount: 0,
-    totalCustomersCount: 450,
-    status: 'Active Regulatory Participant'
-  },
-  {
-    id: 'BANK-003',
-    name: 'Demo Finance Bank',
-    shortName: 'DFB',
-    code: 'DFB-IN-03',
-    role: 'verifier',
-    isIssuer: true,
-    isVerifier: true,
-    did: 'did:bank:fin-003-inst',
-    publicKey: '04:55:A2:CC:89:11:00:DF:99:8A:33:14:8E:22:90:BB:38:44:11:9A',
-    accreditedDate: '12 Nov 2024',
-    rating: 'AAA Commercial Tier-1',
-    activeCredentialsCount: 412,
-    revokedCount: 18,
-    pendingKYCCount: 45,
-    totalCustomersCount: 680,
+    totalCustomersCount: 0,
     status: 'Active Regulatory Participant'
   }
 ];

@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 
 export const CustomerOverview = () => {
-  const { currentCustomer, customerCredential, derivedKycStatus, derivedVerificationCount, derivedVerifiedTimesLabel, hasIssuingBank } = useKYC();
+  const { currentCustomer, customerCredential, derivedKycStatus, derivedVerificationCount, derivedVerifiedTimesLabel, hasIssuingBank, sendKYCRequestToBank } = useKYC();
   const navigate = useNavigate();
 
   return (
@@ -196,11 +196,33 @@ export const CustomerOverview = () => {
           <div className="w-16 h-16 rounded-2xl bg-amber-500/10 text-amber-400 mx-auto flex items-center justify-center">
             <Award className="w-8 h-8" />
           </div>
-          <h3 className="text-xl font-bold text-white">No KYC Credential Issued Yet</h3>
-          <p className="text-xs text-slate-400 max-w-md mx-auto">
-            {currentCustomer.name} has completed registration. Switch to the Bank Issuer portal to review documents and issue the cryptographic credential.
+          <h3 className="text-xl font-bold text-white">
+            {currentCustomer.kycStatus === 'Not Submitted'
+              ? 'KYC Verification Not Requested'
+              : 'KYC Verification Pending with Bank A'}
+          </h3>
+          <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
+            {currentCustomer.kycStatus === 'Not Submitted'
+              ? 'Your identity profile is registered. Click below to submit your verification request to Bank A (Demo National Bank) for regulatory audit and cryptographic credential signing.'
+              : `${currentCustomer.name}'s identity documents are currently queued for regulatory audit by Bank A (Demo National Bank). Switch to Bank A's portal to review and issue the credential.`}
           </p>
-          <div className="pt-2">
+          <div className="pt-3 flex flex-wrap items-center justify-center gap-3">
+            {currentCustomer.kycStatus === 'Not Submitted' ? (
+              <button
+                type="button"
+                onClick={() => sendKYCRequestToBank(currentCustomer.id)}
+                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-semibold shadow-lg shadow-cyan-950/50 cursor-pointer transition-all"
+              >
+                Send KYC Request to Bank A (Issuer)
+              </button>
+            ) : (
+              <Link
+                to="/bank/issuer"
+                className="px-5 py-2.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 text-xs font-semibold transition-colors"
+              >
+                Switch to Bank A (Issuer Portal) →
+              </Link>
+            )}
           </div>
         </div>
       )}

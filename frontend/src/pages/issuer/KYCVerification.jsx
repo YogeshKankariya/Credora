@@ -23,10 +23,11 @@ export const KYCVerification = () => {
   const navigate = useNavigate();
   const { users, approveCustomerKYC, rejectCustomerKYC, credentials } = useKYC();
 
-  // Find customer or fallback to first
-  const targetId = customerId || 'CUST-003';
-  const customer = users.find((u) => u.id === targetId) || users[0];
-  const existingCred = credentials.find((c) => c.customerId === customer.id);
+  // Find customer or fallback to first pending
+  const pendingUser = users.find((u) => u.kycStatus === 'Pending') || users[0];
+  const targetId = customerId || pendingUser?.id || 'CUST-001';
+  const customer = users.find((u) => u.id === targetId || u.dbId === targetId) || pendingUser || users[0];
+  const existingCred = customer ? credentials.find((c) => c.customerId === customer.id || c.customerId === customer.dbId) : null;
 
   const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);

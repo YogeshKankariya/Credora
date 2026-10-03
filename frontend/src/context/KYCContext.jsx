@@ -1,16 +1,20 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api, { setToken } from '../services/api';
+import { initialUsers } from '../data/users';
+import { initialBanks } from '../data/banks';
+import { initialCredentials } from '../data/credentials';
+import { initialVerificationHistory } from '../data/verificationHistory';
 
 const KYCContext = createContext();
 
 const STORAGE_KEYS = {
-  USERS: 'decentralized_kyc_users',
-  BANKS: 'decentralized_kyc_banks',
-  CREDENTIALS: 'decentralized_kyc_credentials',
-  HISTORY: 'decentralized_kyc_history',
-  ROLE: 'decentralized_kyc_role',
-  ACTIVE_CUSTOMER: 'decentralized_kyc_active_customer',
-  ACTIVE_BANK: 'decentralized_kyc_active_bank',
+  USERS: 'credora_users_v4',
+  BANKS: 'credora_banks_v4',
+  CREDENTIALS: 'credora_credentials_v4',
+  HISTORY: 'credora_history_v4',
+  ROLE: 'credora_role_v4',
+  ACTIVE_CUSTOMER: 'credora_active_customer_v4',
+  ACTIVE_BANK: 'credora_active_bank_v4',
 };
 
 // Default role credentials for seamless switching
@@ -22,6 +26,8 @@ const ROLE_ACCOUNTS = {
 
 function formatCustomer(cust) {
   const user = cust.user || {};
+  const kyc = cust.kycStatus === 'VERIFIED' ? 'Verified' : cust.kycStatus === 'REJECTED' ? 'Rejected' : cust.kycStatus === 'NOT_SUBMITTED' ? 'Not Submitted' : 'Pending';
+  const identity = cust.identityStatus === 'VERIFIED' ? 'Verified' : 'Created';
   return {
     id: cust.id,
     dbId: cust.id,
@@ -32,18 +38,18 @@ function formatCustomer(cust) {
     identityCreated: cust.createdAt
       ? new Date(cust.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
       : '10 Aug 2026',
-    keyStatus: cust.keyStatus === 'ACTIVE' ? 'Hardware Enclave Secured' : (cust.keyStatus || 'Hardware Enclave Secured'),
-    identityStatus: cust.identityStatus === 'VERIFIED' ? 'Verified' : 'Pending',
-    kycStatus: cust.kycStatus === 'VERIFIED' ? 'Verified' : cust.kycStatus === 'PENDING' ? 'Pending' : 'Rejected',
+    keyStatus: cust.keyStatus === 'ACTIVE' ? 'Hardware Enclave Secured' : 'Pending Verification',
+    identityStatus: identity,
+    kycStatus: kyc,
     currentCredentialId: cust.credentials?.[0]?.credentialId || null,
     dob: cust.dateOfBirth
       ? new Date(cust.dateOfBirth).toLocaleDateString('en-GB')
       : '15/05/1992 (Synthetic)',
     address: cust.address || '402 Skyline Boulevard, Demo Tech Park, Bangalore 560103',
-    documentType: cust.documentType || 'Synthetic Government Photo ID',
+    documentType: cust.documentType || 'National ID (PAN)',
     documentNumber: cust.documentNumberHash
       ? `HASH:${cust.documentNumberHash.slice(0, 8)}...`
-      : 'DEMO-ID-8829-4102',
+      : 'ABCDE1234F',
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
   };
 }
@@ -64,10 +70,10 @@ function formatBank(b) {
       ? new Date(b.accreditedDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
       : '15 Jan 2024',
     rating: 'AAA Sovereign-Backed',
-    activeCredentialsCount: b.activeCredentialsCount ?? 1,
+    activeCredentialsCount: b.activeCredentialsCount ?? 0,
     revokedCount: b.revokedCount ?? 0,
     pendingKYCCount: b.pendingKYCCount ?? 0,
-    totalCustomersCount: b.totalCustomersCount ?? 1,
+    totalCustomersCount: b.totalCustomersCount ?? 0,
     status: b.status === 'ACTIVE' ? 'Active Regulatory Participant' : b.status,
   };
 }
@@ -112,42 +118,42 @@ function formatCredential(c) {
 }
 
 const DEMO_CUSTOMER = {
-  id: 'demo-customer-001',
-  dbId: 'demo-customer-001',
+  id: 'CUST-001',
+  dbId: 'CUST-001',
   name: 'Rahul Sharma',
   email: 'rahul.sharma@demo-identity.org',
   did: 'did:demo:7f92a8c1e92d8471bb90a42f8',
-  publicKey: '',
+  publicKey: '04:8A:91:2B:EE:7C:3A:9F:88:21:44:A1:77:D2:C3:55:A9:90:B2:D2',
   identityCreated: '10 Aug 2026',
-  keyStatus: 'Hardware Enclave Secured',
-  identityStatus: 'Verified',
-  kycStatus: 'Verified',
-  currentCredentialId: 'KYC-DEMO-001',
+  keyStatus: 'Pending Verification',
+  identityStatus: 'Created',
+  kycStatus: 'Pending',
+  currentCredentialId: null,
   dob: '15/05/1992 (Synthetic)',
   address: '402 Skyline Boulevard, Demo Tech Park, Bangalore 560103',
-  documentType: 'Synthetic Government Photo ID',
-  documentNumber: 'DEMO-ID-8829-4102',
+  documentType: 'National ID (PAN)',
+  documentNumber: 'ABCDE1234F',
   avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
 };
 
 export const KYCProvider = ({ children }) => {
   const [users, setUsers] = useState(() => {
-  const saved = localStorage.getItem(STORAGE_KEYS.USERS);
-  return saved ? JSON.parse(saved) : [DEMO_CUSTOMER];
-});
+    const saved = localStorage.getItem(STORAGE_KEYS.USERS);
+    return saved ? JSON.parse(saved) : initialUsers;
+  });
   const [banks, setBanks] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.BANKS);
-    return saved ? JSON.parse(saved) : [];
+    return saved ? JSON.parse(saved) : initialBanks;
   });
 
   const [credentials, setCredentials] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.CREDENTIALS);
-    return saved ? JSON.parse(saved) : [];
+    return saved ? JSON.parse(saved) : initialCredentials;
   });
 
   const [verificationHistory, setVerificationHistory] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.HISTORY);
-    return saved ? JSON.parse(saved) : [];
+    return saved ? JSON.parse(saved) : initialVerificationHistory;
   });
 
   const [currentRole, setCurrentRole] = useState(() => {
@@ -290,7 +296,7 @@ if (authRes.data?.token) {
   const currentBank = banks.find((b) => b.id === activeBankId || b.code === activeBankId) || banks[0] || {};
   const baseCredential = credentials.find(
     (c) => c.customerId === currentCustomer.id || c.customerId === currentCustomer.dbId
-  ) || credentials[0];
+  );
 
   const customerCredential = baseCredential ? {
     ...baseCredential,
@@ -298,10 +304,10 @@ if (authRes.data?.token) {
   } : null;
 
   // Derived KYC status and verification count — strictly tied to the issuing bank
-  // If there is no credential or the issuer field is empty, status is "Not Verified" and count is 0
-  // When an issuing bank IS present, count starts at 1 (the issuance event itself = first verification)
   const hasIssuingBank = !!(customerCredential?.issuer && customerCredential.issuer.trim() !== '' && customerCredential.issuer.toLowerCase() !== 'none');
-  const derivedKycStatus = hasIssuingBank ? 'Verified' : 'Not Verified';
+  const derivedKycStatus = customerCredential?.status === 'ACTIVE'
+    ? 'Verified'
+    : (currentCustomer.kycStatus || 'Not Submitted');
   const rawCount = hasIssuingBank ? (customerCredential?.verificationCount ?? 0) : 0;
   // Issuance counts as the first verification, so minimum is 1 when issued
   const derivedVerificationCount = hasIssuingBank ? Math.max(1, rawCount) : 0;
@@ -634,9 +640,30 @@ if (authRes.data?.token) {
     localStorage.removeItem(STORAGE_KEYS.ACTIVE_CUSTOMER);
     localStorage.removeItem(STORAGE_KEYS.ACTIVE_BANK);
 
+    setUsers(initialUsers);
+    setBanks(initialBanks);
+    setCredentials([]);
+    setVerificationHistory([]);
     setCurrentRole('customer');
-    loadBackendData('customer');
-    addToast('Environment synchronized with PostgreSQL database.', 'info');
+    setActiveCustomerId(initialUsers[0]?.id || 'CUST-001');
+    setActiveBankId('DNB-IN-BB');
+    addToast('Reset to clean initial state: only Rahul Sharma and Bank A/B.', 'info');
+  };
+
+  const sendKYCRequestToBank = (customerId = activeCustomerId) => {
+    setUsers((prev) =>
+      prev.map((u) => {
+        if (u.id === customerId || u.dbId === customerId) {
+          return {
+            ...u,
+            kycStatus: 'Pending',
+            keyStatus: 'Pending Verification',
+          };
+        }
+        return u;
+      })
+    );
+    addToast('KYC Verification request sent to Bank A (Issuer)!', 'success');
   };
 
   const registerCustomer = async (userData) => {
@@ -647,8 +674,6 @@ if (authRes.data?.token) {
       });
       if (res.data?.token) {
         setToken(res.data.token);
-        // The registration response returns a flat user object {id, name, email, role, createdAt}
-        // without nested profile data, so we build the customer object directly
         const backendUser = res.data.user;
         const customerName = userData.name?.trim() || backendUser.name || 'Customer';
         const newCustomer = {
@@ -659,20 +684,20 @@ if (authRes.data?.token) {
           did: backendUser.did || `did:customer:${backendUser.id.slice(0, 8)}`,
           publicKey: '',
           identityCreated: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
-          keyStatus: 'Hardware Enclave Secured',
-          identityStatus: 'Verified',
-          kycStatus: 'Verified',
-          currentCredentialId: 'KYC-DEMO-001',
-          dob: '15/05/1992',
+          keyStatus: 'Pending Verification',
+          identityStatus: 'Created',
+          kycStatus: 'Not Submitted',
+          currentCredentialId: null,
+          dob: '01/01/1995',
           address: '402 Skyline Boulevard, Demo Tech Park, Bangalore 560103',
           documentType: 'National ID (PAN)',
           documentNumber: 'ABCDE1234F',
           avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
         };
-        setUsers(prev => [newCustomer, ...prev]);
+        setUsers((prev) => [newCustomer, ...prev]);
         setActiveCustomerId(newCustomer.id);
         setCurrentRole('customer');
-        addToast('Registration successful!', 'success');
+        addToast('Registration successful! You can now send a verification request to Bank A.', 'success');
         return backendUser;
       }
     } catch (err) {
@@ -690,9 +715,9 @@ if (authRes.data?.token) {
         const roleStr = backendUser.role.toLowerCase();
         setCurrentRole(roleStr);
         if (roleStr === 'customer') {
-          const customerName = credentials.name?.trim() || backendUser.name || 'Khushi';
-          setUsers(prev => {
-            const index = prev.findIndex(u => u.id === backendUser.id || u.email === backendUser.email);
+          const customerName = credentials.name?.trim() || backendUser.name || 'Rahul Sharma';
+          setUsers((prev) => {
+            const index = prev.findIndex((u) => u.id === backendUser.id || u.email === backendUser.email);
             if (index >= 0) {
               const updated = [...prev];
               updated[index] = {
@@ -702,6 +727,7 @@ if (authRes.data?.token) {
               };
               return updated;
             }
+            const isRahul = (backendUser.email || '').toLowerCase() === 'rahul.sharma@demo-identity.org';
             const newCustomer = {
               id: backendUser.id,
               dbId: backendUser.id,
@@ -710,10 +736,10 @@ if (authRes.data?.token) {
               did: backendUser.did || `did:customer:${backendUser.id.slice(0, 8)}`,
               publicKey: '',
               identityCreated: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
-              keyStatus: 'Hardware Enclave Secured',
-              identityStatus: 'Verified',
-              kycStatus: 'Verified',
-              currentCredentialId: 'KYC-DEMO-001',
+              keyStatus: 'Pending Verification',
+              identityStatus: 'Created',
+              kycStatus: isRahul ? 'Pending' : 'Not Submitted',
+              currentCredentialId: null,
               dob: '15/05/1992',
               address: '402 Skyline Boulevard, Demo Tech Park, Bangalore 560103',
               documentType: 'National ID (PAN)',
@@ -835,6 +861,7 @@ if (authRes.data?.token) {
         revokeCredential,
         verifyCredentialRecord,
         resetDemoData,
+        sendKYCRequestToBank,
         registerCustomer,
         loginUser,
         loginWithGoogle,

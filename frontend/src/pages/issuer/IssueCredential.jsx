@@ -30,8 +30,8 @@ export const IssueCredential = () => {
   const { users, issueCredential, currentBank } = useKYC();
 
   // Find customer or fallback
-  const targetId = customerId || 'CUST-003';
-  const customer = users.find((u) => u.id === targetId) || users[0];
+  const targetId = customerId || users.find((u) => u.kycStatus === 'Verified' || u.kycStatus === 'Pending')?.id || users[0]?.id;
+  const customer = users.find((u) => u.id === targetId || u.dbId === targetId) || users[0];
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [activeStepIndex, setActiveStepIndex] = useState(-1);

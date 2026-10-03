@@ -29,7 +29,9 @@ export const Sidebar = ({
   isCollapsed,
   onToggleCollapse,
 }) => {
-  const { currentRole } = useKYC();
+  const { currentRole, users } = useKYC();
+  const pendingUser = users?.find((u) => u.kycStatus === 'Pending') || users?.[0];
+  const kycAuditPath = pendingUser ? `/bank/issuer/kyc/${pendingUser.id}` : '/bank/issuer/customers';
 
   let navItems = [];
 
@@ -80,7 +82,7 @@ export const Sidebar = ({
       },
       {
         name: 'KYC Verification',
-        path: '/bank/issuer/kyc/CUST-003',
+        path: kycAuditPath,
         icon: FileCheck,
       },
       {
