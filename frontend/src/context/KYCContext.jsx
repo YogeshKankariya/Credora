@@ -38,16 +38,9 @@ function formatCustomer(cust) {
     identityCreated: cust.createdAt 
       ? new Date(cust.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
       : '10 Aug 2026',
-<<<<<<< Updated upstream
     keyStatus: cust.keyStatus === 'ACTIVE' ? 'Hardware Enclave Secured' : 'Pending Verification',
     identityStatus: identity,
     kycStatus: kyc,
-=======
-          createdAt: cust.createdAt || null,
-    keyStatus: cust.keyStatus === 'ACTIVE' ? 'Hardware Enclave Secured' : (cust.keyStatus || 'Hardware Enclave Secured'),
-    identityStatus: cust.identityStatus === 'VERIFIED' ? 'Verified' : 'Pending',
-    kycStatus: cust.kycStatus === 'VERIFIED' ? 'Verified' : cust.kycStatus === 'PENDING' ? 'Pending' : 'Rejected',
->>>>>>> Stashed changes
     currentCredentialId: cust.credentials?.[0]?.credentialId || null,
     dob: cust.dateOfBirth
       ? new Date(cust.dateOfBirth).toLocaleDateString('en-GB')
@@ -77,13 +70,10 @@ function formatBank(b) {
       ? new Date(b.accreditedDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
       : '15 Jan 2024',
     rating: 'AAA Sovereign-Backed',
-<<<<<<< Updated upstream
     activeCredentialsCount: b.activeCredentialsCount ?? 0,
     revokedCount: b.revokedCount ?? 0,
     pendingKYCCount: b.pendingKYCCount ?? 0,
     totalCustomersCount: b.totalCustomersCount ?? 0,
-=======
->>>>>>> Stashed changes
     status: b.status === 'ACTIVE' ? 'Active Regulatory Participant' : b.status,
   };
 }
@@ -697,19 +687,11 @@ useEffect(() => {
           did: backendUser.did || `did:customer:${backendUser.id.slice(0, 8)}`,
           publicKey: '',
           identityCreated: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
-<<<<<<< Updated upstream
           keyStatus: 'Pending Verification',
           identityStatus: 'Created',
           kycStatus: 'Not Submitted',
           currentCredentialId: null,
           dob: '01/01/1995',
-=======
-          keyStatus: 'Hardware Enclave Secured',
-          identityStatus: 'Pending',
-          kycStatus: 'Pending',
-          currentCredentialId: null,
-          dob: '15/05/1992',
->>>>>>> Stashed changes
           address: '402 Skyline Boulevard, Demo Tech Park, Bangalore 560103',
           documentType: 'National ID (PAN)',
           documentNumber: 'ABCDE1234F',
@@ -757,15 +739,9 @@ useEffect(() => {
               did: backendUser.did || `did:customer:${backendUser.id.slice(0, 8)}`,
               publicKey: '',
               identityCreated: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
-<<<<<<< Updated upstream
               keyStatus: 'Pending Verification',
               identityStatus: 'Created',
               kycStatus: isRahul ? 'Pending' : 'Not Submitted',
-=======
-              keyStatus: 'Hardware Enclave Secured',
-              identityStatus: 'Pending',
-              kycStatus: 'Pending',
->>>>>>> Stashed changes
               currentCredentialId: null,
               dob: '15/05/1992',
               address: '402 Skyline Boulevard, Demo Tech Park, Bangalore 560103',
